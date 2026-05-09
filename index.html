@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>金融小助手</title>
+    <link rel="stylesheet" href="styles.css?v=20260507-geo10m-cache2">
+  </head>
+  <body>
+    <main class="app">
+      <section class="world-clock-strip" aria-label="世界主要市场时钟">
+        <div class="globe-panel">
+          <div class="globe-heading">
+            <div>
+              <p class="eyebrow">Market Clocks</p>
+              <h2>全球主流时钟</h2>
+            </div>
+            <span id="globeStatus" class="pill ok">加载 1:10m 地球</span>
+          </div>
+          <div id="globeStage" class="globe-stage" aria-label="可交互世界市场地球">
+            <canvas id="globeCanvas" class="globe-canvas"></canvas>
+            <div id="globeTooltip" class="globe-tooltip" aria-live="polite"></div>
+          </div>
+          <small class="globe-help">Natural Earth 1:10m 高精度陆地边界。拖拽旋转地球，点击光点查看时间，点击空白处取消选中。</small>
+        </div>
+        <div id="worldClocks" class="world-clocks" aria-live="polite"></div>
+      </section>
+
+      <header class="topbar">
+        <section class="brand">
+          <p class="eyebrow">Global Market Console</p>
+          <h1>金融小助手</h1>
+          <p class="subcopy">汇率、全球指数、换汇计算，一屏完成。</p>
+        </section>
+
+        <section class="actions" aria-label="刷新和搜索">
+          <label class="search">
+            <span>搜索</span>
+            <input id="searchInput" type="search" placeholder="货币 / 指数 / 代码" autocomplete="off">
+          </label>
+          <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换深浅色模式">
+            <span class="theme-icon" aria-hidden="true">◐</span>
+            <span id="themeLabel">暗色</span>
+          </button>
+          <button id="colorModeToggle" class="theme-toggle color-mode-toggle" type="button" aria-label="切换涨跌颜色习惯">
+            <span class="theme-icon" aria-hidden="true">↕</span>
+            <span id="colorModeLabel">绿涨红跌</span>
+          </button>
+          <button id="refreshButton" class="refresh-button" type="button">
+            <span class="refresh-icon" aria-hidden="true">↻</span>
+            刷新
+          </button>
+        </section>
+      </header>
+
+      <section class="status-strip" aria-live="polite">
+        <div>
+          <span class="label">状态</span>
+          <strong id="statusText">正在加载市场数据...</strong>
+        </div>
+        <div>
+          <span class="label">上次更新</span>
+          <strong id="updatedAt">--</strong>
+        </div>
+        <div>
+          <span class="label">自动刷新</span>
+          <strong id="autoRefreshLabel">20 秒</strong>
+        </div>
+      </section>
+
+      <section class="summary-grid" aria-label="市场总览">
+        <article class="summary-item">
+          <span class="label">涨跌指数</span>
+          <strong id="marketBreadth">--</strong>
+          <small>全球主要指数样本</small>
+        </article>
+        <article class="summary-item">
+          <span class="label">数据来源</span>
+          <strong id="sourceLabel">--</strong>
+          <small>免费源，可能延迟</small>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <section class="panel fx-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">FX Rates</p>
+              <h2>常用汇率</h2>
+            </div>
+            <span id="fxStatus" class="pill">加载中</span>
+          </div>
+          <div class="fx-base-control base-control">
+            <label class="label" for="baseCurrencySelect">基础货币</label>
+            <select id="baseCurrencySelect" class="summary-select"></select>
+            <small id="baseCurrencyHelp">汇率以 1 USD 为基准</small>
+          </div>
+          <div id="fxGrid" class="fx-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="panel converter-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Converter</p>
+              <h2>换汇计算</h2>
+            </div>
+          </div>
+          <div class="converter">
+            <label>
+              <span>金额</span>
+              <input id="amountInput" type="number" min="0" step="0.01" value="1000">
+            </label>
+            <div class="select-row">
+              <label>
+                <span>从</span>
+                <select id="fromCurrency"></select>
+              </label>
+              <button id="swapButton" class="icon-button" type="button" aria-label="交换货币">⇄</button>
+              <label>
+                <span>到</span>
+                <select id="toCurrency"></select>
+              </label>
+            </div>
+            <output id="converterResult" class="converter-result">--</output>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel indices-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">World Indices</p>
+            <h2>全球主要指数</h2>
+          </div>
+          <div class="index-tools">
+            <div class="segmented chart-mode-tabs" role="tablist" aria-label="指数走势图周期">
+              <button type="button" class="segmented-button active" data-trend-mode="intraday">分时</button>
+              <button type="button" class="segmented-button" data-trend-mode="daily">日K</button>
+              <button type="button" class="segmented-button" data-trend-mode="monthly">月K</button>
+            </div>
+            <span id="indexStatus" class="pill">加载中</span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>指数</th>
+                <th>代码</th>
+                <th>最新</th>
+                <th>涨跌</th>
+                <th>涨跌幅</th>
+                <th>走势</th>
+                <th>更新时间</th>
+                <th>来源</th>
+              </tr>
+            </thead>
+            <tbody id="indicesBody"></tbody>
+          </table>
+        </div>
+        <aside id="indexDetail" class="index-detail" hidden>
+          <div class="detail-topline">
+            <div>
+              <p class="eyebrow">Index Detail</p>
+              <h3 id="detailTitle">--</h3>
+              <small id="detailMeta">--</small>
+            </div>
+            <button id="detailClose" class="icon-button subtle" type="button" aria-label="关闭指数详情">×</button>
+          </div>
+          <div class="detail-actions">
+            <div class="segmented" role="tablist" aria-label="详情图表周期">
+              <button type="button" class="segmented-button active" data-detail-trend-mode="intraday">分时</button>
+              <button type="button" class="segmented-button" data-detail-trend-mode="daily">日K</button>
+              <button type="button" class="segmented-button" data-detail-trend-mode="monthly">月K</button>
+            </div>
+            <a id="detailSource" class="source-link" href="#" target="_blank" rel="noopener noreferrer">打开数据源</a>
+          </div>
+          <div id="detailChart" class="detail-chart" aria-live="polite"></div>
+          <div id="chartTooltip" class="chart-tooltip" hidden></div>
+          <div id="detailStats" class="detail-stats"></div>
+        </aside>
+      </section>
+
+      <footer class="disclaimer">
+        免费公开数据源可能存在延迟、缺口或访问限制。本工具仅供信息参考，不构成投资、交易或换汇建议。
+      </footer>
+    </main>
+
+    <script src="app.js?v=20260507-geo10m-cache2"></script>
+  </body>
+</html>

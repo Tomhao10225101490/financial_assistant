@@ -8,6 +8,118 @@
   </head>
   <body>
     <main class="app">
+      <header class="terminal-header">
+        <section class="brand compact-brand">
+          <p class="eyebrow">Market Briefing Terminal</p>
+          <h1 id="productTitle">MarketRadar</h1>
+          <p id="productTagline" class="subcopy">全球行情读卡器 · 多源融合 · 30 秒扫读全球市场</p>
+        </section>
+        <section class="actions" aria-label="刷新和搜索">
+          <label class="search">
+            <span>搜索 <kbd>Ctrl+K</kbd></span>
+            <input id="searchInput" type="search" placeholder="资产 / 指数 / 代码 / 区域" autocomplete="off">
+          </label>
+          <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换深浅色模式">
+            <span class="theme-icon" aria-hidden="true">◐</span>
+            <span id="themeLabel">浅色</span>
+          </button>
+          <button id="colorModeToggle" class="theme-toggle color-mode-toggle" type="button" aria-label="切换涨跌颜色习惯">
+            <span class="theme-icon" aria-hidden="true">↕</span>
+            <span id="colorModeLabel">绿涨红跌</span>
+          </button>
+          <button id="refreshButton" class="refresh-button" type="button">
+            <span class="refresh-icon" aria-hidden="true">↻</span>
+            刷新
+          </button>
+        </section>
+      </header>
+
+      <section class="ticker-strip" aria-label="滚动行情带">
+        <div id="tickerTape" class="ticker-tape" aria-live="polite"></div>
+      </section>
+
+      <section class="status-strip terminal-status" aria-live="polite">
+        <div>
+          <span class="label">状态</span>
+          <strong id="statusText">正在加载全球市场简报...</strong>
+        </div>
+        <div>
+          <span class="label">上次更新</span>
+          <strong id="updatedAt">--</strong>
+        </div>
+        <div>
+          <span class="label">自动刷新</span>
+          <strong id="autoRefreshLabel">20 秒</strong>
+        </div>
+        <div>
+          <span class="label">数据频道</span>
+          <strong id="sourceLabel">--</strong>
+        </div>
+      </section>
+
+      <section class="terminal-grid" aria-label="全球简报终端">
+        <article class="panel terminal-panel briefing-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Daily Briefing</p>
+              <h2>今日要点</h2>
+            </div>
+            <span id="briefingStatus" class="pill">加载中</span>
+          </div>
+          <ul id="briefingHighlights" class="briefing-highlights"></ul>
+          <div id="briefingHeadlines" class="briefing-headlines"></div>
+        </article>
+
+        <article class="panel terminal-panel heatmap-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Region Pulse</p>
+              <h2>区域热力</h2>
+            </div>
+            <span id="pulseSummary" class="pill">--</span>
+          </div>
+          <div id="regionHeatmap" class="region-heatmap"></div>
+        </article>
+
+        <article class="panel terminal-panel macro-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Macro & Risk</p>
+              <h2>宏观卡片</h2>
+            </div>
+          </div>
+          <div id="macroCards" class="macro-cards"></div>
+          <div id="commodityCards" class="macro-cards secondary-cards"></div>
+          <div id="cryptoCards" class="macro-cards secondary-cards"></div>
+        </article>
+      </section>
+
+      <section class="panel watchlist-panel" aria-label="跨资产观察列表">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Cross-Asset Watchlist</p>
+            <h2>跨资产观察列表</h2>
+          </div>
+          <span id="watchlistStatus" class="pill">加载中</span>
+        </div>
+        <div class="table-wrap">
+          <table class="watchlist-table">
+            <thead>
+              <tr>
+                <th>资产</th>
+                <th>分类</th>
+                <th>最新</th>
+                <th>涨跌</th>
+                <th>涨跌幅</th>
+                <th>来源</th>
+                <th>延迟</th>
+              </tr>
+            </thead>
+            <tbody id="watchlistBody"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="world-clock-strip" aria-label="世界主要市场时钟">
         <div class="globe-panel">
           <div class="globe-heading">
@@ -21,51 +133,9 @@
             <canvas id="globeCanvas" class="globe-canvas"></canvas>
             <div id="globeTooltip" class="globe-tooltip" aria-live="polite"></div>
           </div>
-          <small class="globe-help">Natural Earth 1:10m 高精度陆地边界。拖拽旋转地球，点击光点查看时间，点击空白处取消选中。</small>
+          <small class="globe-help">拖拽旋转地球，点击光点查看时间。点击区域热力块可过滤下方列表。</small>
         </div>
         <div id="worldClocks" class="world-clocks" aria-live="polite"></div>
-      </section>
-
-      <header class="topbar">
-        <section class="brand">
-          <p class="eyebrow">Global Market Console</p>
-          <h1>金融小助手</h1>
-          <p class="subcopy">汇率、全球指数、换汇计算，一屏完成。</p>
-        </section>
-
-        <section class="actions" aria-label="刷新和搜索">
-          <label class="search">
-            <span>搜索</span>
-            <input id="searchInput" type="search" placeholder="货币 / 指数 / 代码" autocomplete="off">
-          </label>
-          <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换深浅色模式">
-            <span class="theme-icon" aria-hidden="true">◐</span>
-            <span id="themeLabel">暗色</span>
-          </button>
-          <button id="colorModeToggle" class="theme-toggle color-mode-toggle" type="button" aria-label="切换涨跌颜色习惯">
-            <span class="theme-icon" aria-hidden="true">↕</span>
-            <span id="colorModeLabel">绿涨红跌</span>
-          </button>
-          <button id="refreshButton" class="refresh-button" type="button">
-            <span class="refresh-icon" aria-hidden="true">↻</span>
-            刷新
-          </button>
-        </section>
-      </header>
-
-      <section class="status-strip" aria-live="polite">
-        <div>
-          <span class="label">状态</span>
-          <strong id="statusText">正在加载市场数据...</strong>
-        </div>
-        <div>
-          <span class="label">上次更新</span>
-          <strong id="updatedAt">--</strong>
-        </div>
-        <div>
-          <span class="label">自动刷新</span>
-          <strong id="autoRefreshLabel">20 秒</strong>
-        </div>
       </section>
 
       <section class="summary-grid" aria-label="市场总览">
@@ -75,9 +145,9 @@
           <small>全球主要指数样本</small>
         </article>
         <article class="summary-item">
-          <span class="label">数据来源</span>
-          <strong id="sourceLabel">--</strong>
-          <small>免费源，可能延迟</small>
+          <span class="label">恐惧贪婪</span>
+          <strong id="fearGreedLabel">--</strong>
+          <small>加密市场情绪</small>
         </article>
         <article class="summary-item trust-item">
           <span class="label">运行可信度</span>
@@ -187,7 +257,7 @@
       </section>
 
       <footer class="disclaimer">
-        免费公开数据源可能存在延迟、缺口或访问限制。本工具仅供信息参考，不构成投资、交易或换汇建议。
+        MarketRadar 使用免费公开数据源，可能存在延迟、缺口或访问限制。规则引擎生成的「今日要点」仅供参考，不构成投资、交易或换汇建议。
       </footer>
     </main>
 

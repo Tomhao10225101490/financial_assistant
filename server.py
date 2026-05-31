@@ -4,6 +4,7 @@ import csv
 import json
 import math
 import mimetypes
+import os
 import ssl
 import sys
 import threading
@@ -19,67 +20,31 @@ from typing import Any, Callable
 from urllib.parse import parse_qs, quote, unquote, urlparse
 from urllib.request import Request, urlopen
 
+from sources.briefing import BriefingService
+
 
 ROOT = Path(__file__).resolve().parent
-HOST = "127.0.0.1"
-PORT = 18765
-AUTO_REFRESH_SECONDS = 20
+CONFIG_PATH = ROOT / "market-config.json"
+HOST = os.environ.get("HOST", "127.0.0.1")
+PORT = int(os.environ.get("PORT", "18765"))
 TREND_MODES = {"intraday", "daily", "monthly"}
 APP_VERSION = "release-20260518"
 
-CURRENCIES = [
-    {"code": "USD", "name": "美元"},
-    {"code": "CNY", "name": "人民币"},
-    {"code": "EUR", "name": "欧元"},
-    {"code": "JPY", "name": "日元"},
-    {"code": "GBP", "name": "英镑"},
-    {"code": "HKD", "name": "港币"},
-    {"code": "AUD", "name": "澳元"},
-    {"code": "CAD", "name": "加元"},
-    {"code": "CHF", "name": "瑞郎"},
-    {"code": "SGD", "name": "新加坡元"},
-    {"code": "KRW", "name": "韩元"},
-    {"code": "INR", "name": "印度卢比"},
-]
 
-REQUIRED_CURRENCIES = [item["code"] for item in CURRENCIES]
+def load_market_config() -> dict[str, Any]:
+    with CONFIG_PATH.open(encoding="utf-8") as handle:
+        return json.load(handle)
 
-INDEX_SYMBOLS = [
-    {"name": "S&P 500", "zhName": "标普500指数", "symbol": "^GSPC", "sinaGlobal": "gb_$inx", "sinaType": "us", "sinaDaily": ".inx", "stooq": ["^spx", "^gspc"], "timeZone": "America/New_York", "timeZoneLabel": "美东时间", "detailUrl": "https://www.spglobal.com/spdji/en/indices/equity/sp-500/"},
-    {"name": "Nasdaq Composite", "zhName": "纳斯达克综合指数", "symbol": "^IXIC", "sinaGlobal": "gb_ixic", "sinaType": "us", "sinaDaily": ".ixic", "stooq": ["^ndq", "^comp", "^ixic"], "timeZone": "America/New_York", "timeZoneLabel": "美东时间", "detailUrl": "https://www.nasdaq.com/market-activity/index/comp"},
-    {"name": "Dow Jones Industrial Average", "zhName": "道琼斯工业平均指数", "symbol": "^DJI", "sinaGlobal": "gb_$dji", "sinaType": "us", "sinaDaily": ".dji", "stooq": ["^dji"], "timeZone": "America/New_York", "timeZoneLabel": "美东时间", "detailUrl": "https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/"},
-    {"name": "FTSE 100", "zhName": "富时100指数", "symbol": "^FTSE", "sinaGlobal": "b_FTSE", "sinaType": "b", "stooq": ["^uk100", "^ukx", "^ftse"], "timeZone": "Europe/London", "timeZoneLabel": "伦敦时间", "detailUrl": "https://www.lseg.com/en/ftse-russell/indices/uk"},
-    {"name": "DAX", "zhName": "德国DAX指数", "symbol": "^GDAXI", "sinaGlobal": "b_DAX", "sinaType": "b", "stooq": ["^dax"], "timeZone": "Europe/Berlin", "timeZoneLabel": "法兰克福时间", "detailUrl": "https://www.dax-indices.com/"},
-    {"name": "CAC 40", "zhName": "法国CAC40指数", "symbol": "^FCHI", "sinaGlobal": "b_CAC", "sinaType": "b", "stooq": ["^cac"], "timeZone": "Europe/Paris", "timeZoneLabel": "巴黎时间", "detailUrl": "https://live.euronext.com/en/product/indices/FR0003500008-XPAR"},
-    {"name": "Nikkei 225", "zhName": "日经225指数", "symbol": "^N225", "sinaGlobal": "b_NKY", "sinaType": "b", "stooq": ["^nkx", "^n225"], "timeZone": "Asia/Tokyo", "timeZoneLabel": "东京时间", "detailUrl": "https://indexes.nikkei.co.jp/en/nkave/index/profile?idx=nk225"},
-    {"name": "Hang Seng Index", "zhName": "恒生指数", "symbol": "^HSI", "stooq": ["^hsi"], "sina": "rt_hkHSI", "timeZone": "Asia/Hong_Kong", "timeZoneLabel": "香港时间", "detailUrl": "https://www.hsi.com.hk/eng/indexes/all-indexes/hsi"},
-    {"name": "Shanghai Composite", "zhName": "上证综合指数", "symbol": "000001.SS", "stooq": ["^shc", "^ssec"], "sina": "sh000001", "timeZone": "Asia/Shanghai", "timeZoneLabel": "上海时间", "detailUrl": "https://english.sse.com.cn/markets/indices/overview/"},
-    {"name": "CSI 300", "zhName": "沪深300指数", "symbol": "000300.SS", "stooq": ["csi300", "^csi300"], "sina": "sh000300", "timeZone": "Asia/Shanghai", "timeZoneLabel": "上海时间", "detailUrl": "https://www.csindex.com.cn/en/indices/index-detail/000300"},
-]
 
-FALLBACK_FX = {
-    "base": "USD",
-    "timestamp": None,
-    "timeZone": "UTC",
-    "timeZoneLabel": "协调世界时",
-    "source": "内置参考值",
-    "sourceUrl": "",
-    "rates": {
-        "USD": 1,
-        "CNY": 7.22,
-        "EUR": 0.93,
-        "JPY": 155.5,
-        "GBP": 0.79,
-        "HKD": 7.82,
-        "AUD": 1.52,
-        "CAD": 1.37,
-        "CHF": 0.91,
-        "SGD": 1.35,
-        "KRW": 1365,
-        "INR": 83.4,
-    },
-    "stale": True,
-}
+MARKET_CONFIG = load_market_config()
+AUTO_REFRESH_SECONDS = int(MARKET_CONFIG.get("autoRefreshSeconds", 20))
+CURRENCIES = MARKET_CONFIG["currencies"]
+REQUIRED_CURRENCIES = MARKET_CONFIG.get(
+    "coreCurrencies",
+    [item["code"] for item in CURRENCIES[:12]],
+)
+INDEX_SYMBOLS = MARKET_CONFIG["indexSymbols"]
+FALLBACK_FX = MARKET_CONFIG["fallbackFx"]
 
 
 class MiniApp:
@@ -568,6 +533,7 @@ class MarketDataService:
             "timeZoneLabel": index["timeZoneLabel"],
             "detailUrl": index["detailUrl"],
             "source": "Yahoo Finance Chart",
+            "region": index.get("region", "global"),
         }
 
     def _fetch_yahoo_trend(self, index: dict[str, Any], mode: str) -> dict[str, Any]:
@@ -726,6 +692,7 @@ class MarketDataService:
 
 
 service = MarketDataService()
+briefing_service = BriefingService(MARKET_CONFIG, service.fetch_indices)
 app = MiniApp()
 
 
@@ -1009,6 +976,7 @@ def map_stooq_index(index: dict[str, Any], row: dict[str, str]) -> dict[str, Any
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Stooq",
+        "region": index.get("region", "global"),
     }
 
 
@@ -1041,6 +1009,7 @@ def map_sina_us_global_index(index: dict[str, Any], fields: list[str]) -> dict[s
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Sina Finance Global",
+        "region": index.get("region", "global"),
     }
 
 
@@ -1074,6 +1043,7 @@ def map_sina_b_global_index(index: dict[str, Any], fields: list[str]) -> dict[st
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Sina Finance Global",
+        "region": index.get("region", "global"),
     }
 
 
@@ -1105,6 +1075,7 @@ def map_sina_cn_index(index: dict[str, Any], fields: list[str]) -> dict[str, Any
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Sina Finance",
+        "region": index.get("region", "global"),
     }
 
 
@@ -1138,6 +1109,7 @@ def map_sina_hk_index(index: dict[str, Any], fields: list[str]) -> dict[str, Any
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Sina Finance",
+        "region": index.get("region", "global"),
     }
 
 
@@ -1295,6 +1267,7 @@ def unavailable_index(index: dict[str, Any]) -> dict[str, Any]:
         "detailUrl": index.get("detailUrl", ""),
         "source": "暂不可用",
         "unavailable": True,
+        "region": index.get("region", "global"),
     }
 
 

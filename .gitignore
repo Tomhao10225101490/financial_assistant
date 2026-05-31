@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Local logs and test artifacts
+*.log
+public-bat-test.*
+
+# Optional local tunnel binary (download separately)
+cloudflared.exe
+
+# Python cache
+sources/__pycache__/

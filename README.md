@@ -31,8 +31,8 @@ http://127.0.0.1:18765
 
 也可以用命令行启动：
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\run.ps1
+```bash
+python3 server.py
 ```
 
 ### 公网访问

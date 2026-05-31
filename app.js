@@ -1,21 +1,8 @@
-const CURRENCIES = [
-  { code: "USD", name: "美元" },
-  { code: "CNY", name: "人民币" },
-  { code: "EUR", name: "欧元" },
-  { code: "JPY", name: "日元" },
-  { code: "GBP", name: "英镑" },
-  { code: "HKD", name: "港币" },
-  { code: "AUD", name: "澳元" },
-  { code: "CAD", name: "加元" },
-  { code: "CHF", name: "瑞郎" },
-  { code: "SGD", name: "新加坡元" },
-  { code: "KRW", name: "韩元" },
-  { code: "INR", name: "印度卢比" }
-];
-
-const AUTO_REFRESH_MS = 20000;
+let CURRENCIES = [];
+let INDEX_SYMBOLS = [];
+let AUTO_REFRESH_MS = 20000;
 const DEFAULT_BASE_CURRENCY = "USD";
-const REQUIRED_CURRENCY_CODES = CURRENCIES.map((currency) => currency.code);
+let REQUIRED_CURRENCY_CODES = [];
 const BEIJING_TIME_ZONE = "Asia/Shanghai";
 const LOCAL_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || BEIJING_TIME_ZONE;
 const TREND_MODES = [
@@ -32,86 +19,6 @@ const WORLD_CLOCKS = [
   { city: "法兰克福", market: "德国", timeZone: "Europe/Berlin", lat: 50.1109, lon: 8.6821 },
   { city: "东京", market: "日本", timeZone: "Asia/Tokyo", lat: 35.6762, lon: 139.6503 },
   { city: "香港", market: "中国香港", timeZone: "Asia/Hong_Kong", lat: 22.3193, lon: 114.1694 }
-];
-
-const LAND_MASSES = [
-  {
-    name: "北美洲",
-    points: [
-      [72, -168], [68, -144], [61, -128], [56, -124], [50, -126], [45, -123], [39, -124],
-      [32, -117], [27, -111], [23, -106], [17, -99], [14, -92], [9, -83], [18, -76],
-      [25, -80], [31, -82], [36, -76], [42, -70], [48, -64], [54, -58], [60, -64],
-      [66, -78], [72, -92], [74, -122], [72, -168]
-    ]
-  },
-  {
-    name: "格陵兰",
-    points: [
-      [83, -62], [80, -34], [74, -18], [66, -24], [60, -42], [62, -56], [70, -72], [78, -72], [83, -62]
-    ]
-  },
-  {
-    name: "南美洲",
-    points: [
-      [12, -82], [8, -74], [2, -79], [-5, -78], [-12, -74], [-18, -70], [-24, -66],
-      [-32, -70], [-42, -72], [-55, -68], [-54, -60], [-45, -58], [-36, -54], [-28, -48],
-      [-18, -39], [-9, -36], [-3, -44], [5, -52], [10, -62], [12, -82]
-    ]
-  },
-  {
-    name: "欧洲",
-    points: [
-      [72, -10], [68, 8], [61, 18], [56, 28], [50, 30], [45, 22], [41, 15],
-      [37, 8], [40, 0], [44, -6], [50, -5], [55, -10], [60, -8], [64, -20], [72, -10]
-    ]
-  },
-  {
-    name: "非洲",
-    points: [
-      [36, -17], [34, 4], [31, 18], [25, 32], [12, 42], [4, 39], [-5, 34], [-15, 28],
-      [-25, 24], [-34, 18], [-35, 10], [-28, 4], [-18, -5], [-4, -13], [8, -17], [20, -16], [30, -10], [36, -17]
-    ]
-  },
-  {
-    name: "亚洲",
-    points: [
-      [71, 32], [68, 56], [62, 82], [58, 104], [53, 126], [45, 142], [36, 138],
-      [31, 124], [25, 116], [19, 108], [10, 103], [7, 96], [18, 80], [24, 66],
-      [28, 52], [36, 42], [43, 36], [52, 32], [60, 28], [71, 32]
-    ]
-  },
-  {
-    name: "印度次大陆",
-    points: [
-      [28, 68], [25, 78], [21, 87], [15, 82], [8, 78], [6, 73], [15, 70], [22, 67], [28, 68]
-    ]
-  },
-  {
-    name: "东南亚",
-    points: [
-      [22, 96], [18, 106], [10, 108], [1, 103], [-6, 106], [-8, 116], [-3, 124],
-      [6, 121], [12, 114], [20, 110], [22, 96]
-    ]
-  },
-  {
-    name: "日本列岛",
-    points: [
-      [45, 140], [41, 143], [37, 141], [33, 136], [31, 130], [35, 132], [40, 136], [45, 140]
-    ]
-  },
-  {
-    name: "大洋洲",
-    points: [
-      [-10, 113], [-16, 122], [-22, 132], [-28, 142], [-37, 150], [-44, 146], [-39, 134],
-      [-31, 124], [-24, 113], [-16, 112], [-10, 113]
-    ]
-  },
-  {
-    name: "马达加斯加",
-    points: [
-      [-12, 49], [-19, 51], [-25, 48], [-22, 44], [-15, 43], [-12, 49]
-    ]
-  }
 ];
 
 const OFFICIAL_FX_SOURCES = {
@@ -141,19 +48,6 @@ const OFFICIAL_FX_SOURCES = {
 
 const ECB_SUPPORTED_CURRENCIES = new Set(["USD", "CNY", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "CHF", "SGD", "KRW", "INR"]);
 
-const INDEX_SYMBOLS = [
-  { name: "S&P 500", zhName: "标普500指数", symbol: "^GSPC", stooq: ["^spx", "^gspc"], timeZone: "America/New_York", timeZoneLabel: "美东时间", detailUrl: "https://www.spglobal.com/spdji/en/indices/equity/sp-500/" },
-  { name: "Nasdaq Composite", zhName: "纳斯达克综合指数", symbol: "^IXIC", stooq: ["^ndq", "^comp", "^ixic"], timeZone: "America/New_York", timeZoneLabel: "美东时间", detailUrl: "https://www.nasdaq.com/market-activity/index/comp" },
-  { name: "Dow Jones Industrial Average", zhName: "道琼斯工业平均指数", symbol: "^DJI", stooq: ["^dji"], timeZone: "America/New_York", timeZoneLabel: "美东时间", detailUrl: "https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/" },
-  { name: "FTSE 100", zhName: "富时100指数", symbol: "^FTSE", stooq: ["^uk100", "^ukx", "^ftse"], timeZone: "Europe/London", timeZoneLabel: "伦敦时间", detailUrl: "https://www.lseg.com/en/ftse-russell/indices/uk" },
-  { name: "DAX", zhName: "德国DAX指数", symbol: "^GDAXI", stooq: ["^dax"], timeZone: "Europe/Berlin", timeZoneLabel: "法兰克福时间", detailUrl: "https://www.dax-indices.com/" },
-  { name: "CAC 40", zhName: "法国CAC40指数", symbol: "^FCHI", stooq: ["^cac"], timeZone: "Europe/Paris", timeZoneLabel: "巴黎时间", detailUrl: "https://live.euronext.com/en/product/indices/FR0003500008-XPAR" },
-  { name: "Nikkei 225", zhName: "日经225指数", symbol: "^N225", stooq: ["^nkx", "^n225"], timeZone: "Asia/Tokyo", timeZoneLabel: "东京时间", detailUrl: "https://indexes.nikkei.co.jp/en/nkave/index/profile?idx=nk225" },
-  { name: "Hang Seng Index", zhName: "恒生指数", symbol: "^HSI", stooq: ["^hsi"], timeZone: "Asia/Hong_Kong", timeZoneLabel: "香港时间", detailUrl: "https://www.hsi.com.hk/eng/indexes/all-indexes/hsi" },
-  { name: "Shanghai Composite", zhName: "上证综合指数", symbol: "000001.SS", stooq: ["^shc", "^ssec"], timeZone: "Asia/Shanghai", timeZoneLabel: "上海时间", detailUrl: "https://english.sse.com.cn/markets/indices/overview/" },
-  { name: "CSI 300", zhName: "沪深300指数", symbol: "000300.SS", stooq: ["csi300", "^csi300"], timeZone: "Asia/Shanghai", timeZoneLabel: "上海时间", detailUrl: "https://www.csindex.com.cn/en/indices/index-detail/000300" }
-];
-
 const CACHE_KEYS = {
   fx: "financialAssistant.fx.v1",
   indices: "financialAssistant.indices.v2",
@@ -161,10 +55,11 @@ const CACHE_KEYS = {
   baseCurrency: "financialAssistant.baseCurrency.v1",
   theme: "financialAssistant.theme.v1",
   colorMode: "financialAssistant.colorMode.v1",
-  trendMode: "financialAssistant.trendMode.v1"
+  trendMode: "financialAssistant.trendMode.v1",
+  briefing: "financialAssistant.briefing.v1"
 };
 
-const FALLBACK_FX = {
+let FALLBACK_FX = {
   base: "USD",
   timestamp: null,
   timeZone: "UTC",
@@ -196,9 +91,11 @@ const state = {
     daily: {},
     monthly: {}
   },
+  briefing: null,
+  regionFilter: "",
   query: "",
   baseCurrency: DEFAULT_BASE_CURRENCY,
-  theme: "light",
+  theme: "dark",
   colorMode: "green-up",
   trendMode: DEFAULT_TREND_MODE,
   detailSymbol: null,
@@ -250,7 +147,21 @@ const elements = {
   fromCurrency: document.querySelector("#fromCurrency"),
   toCurrency: document.querySelector("#toCurrency"),
   swapButton: document.querySelector("#swapButton"),
-  converterResult: document.querySelector("#converterResult")
+  converterResult: document.querySelector("#converterResult"),
+  productTitle: document.querySelector("#productTitle"),
+  productTagline: document.querySelector("#productTagline"),
+  tickerTape: document.querySelector("#tickerTape"),
+  briefingHighlights: document.querySelector("#briefingHighlights"),
+  briefingHeadlines: document.querySelector("#briefingHeadlines"),
+  briefingStatus: document.querySelector("#briefingStatus"),
+  regionHeatmap: document.querySelector("#regionHeatmap"),
+  pulseSummary: document.querySelector("#pulseSummary"),
+  macroCards: document.querySelector("#macroCards"),
+  commodityCards: document.querySelector("#commodityCards"),
+  cryptoCards: document.querySelector("#cryptoCards"),
+  watchlistBody: document.querySelector("#watchlistBody"),
+  watchlistStatus: document.querySelector("#watchlistStatus"),
+  fearGreedLabel: document.querySelector("#fearGreedLabel")
 };
 
 let renderFrame = null;
@@ -286,6 +197,242 @@ const globe = {
   paused: false,
   reducedMotion: window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 };
+
+function sourceLatencyBadge(item) {
+  if (!item || !item.updatedAt) return '<span class="source-badge">--</span>';
+  const ageMs = Date.now() - new Date(item.updatedAt).getTime();
+  const seconds = Number.isFinite(ageMs) ? Math.max(0, Math.round(ageMs / 1000)) : null;
+  const label = seconds === null ? "--" : seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)}m`;
+  const tone = seconds !== null && seconds <= 30 ? "ok" : seconds !== null && seconds <= 120 ? "warn" : "muted";
+  const source = item.source ? escapeHtml(item.source) : "未知源";
+  return `<span class="source-badge ${tone}" title="${source}">${source} · ${label}</span>`;
+}
+
+function assetGroupLabel(group) {
+  const labels = {
+    equity_index: "股指",
+    rates: "利率",
+    volatility: "波动率",
+    commodities: "商品",
+    crypto: "加密",
+    fx: "外汇"
+  };
+  return labels[group] || group || "--";
+}
+
+async function fetchBriefing() {
+  if (!hasBackendApi()) return null;
+  try {
+    const data = await fetchJson("/api/briefing", { timeout: 45000 });
+    if (!data || !data.ok) throw new Error("Invalid briefing payload");
+    writeCache(CACHE_KEYS.briefing, data);
+    return data;
+  } catch (error) {
+    console.warn("Briefing API failed.", error);
+    return readCache(CACHE_KEYS.briefing);
+  }
+}
+
+function buildTickerItems() {
+  const items = [];
+  const briefing = state.briefing;
+  if (briefing) {
+    (briefing.indices || []).slice(0, 6).forEach((item) => {
+      if (Number.isFinite(item.price)) items.push({ label: item.zhName || item.symbol, value: formatPercent(item.changePct), tone: item.change > 0 ? "up" : item.change < 0 ? "down" : "muted" });
+    });
+    (briefing.macro || []).slice(0, 3).forEach((item) => {
+      if (Number.isFinite(item.price)) items.push({ label: item.zhName || item.symbol, value: formatNumber(item.price, 2), tone: "muted" });
+    });
+    (briefing.crypto || []).slice(0, 2).forEach((item) => {
+      if (Number.isFinite(item.price)) items.push({ label: item.zhName || item.symbol, value: formatPercent(item.changePct), tone: item.changePct > 0 ? "up" : item.changePct < 0 ? "down" : "muted" });
+    });
+  }
+  if (state.fx && state.fx.rates) {
+    ["CNY", "EUR", "JPY"].forEach((code) => {
+      if (Number.isFinite(state.fx.rates[code])) {
+        items.push({ label: `${state.fx.base}/${code}`, value: formatFxRate(state.fx.rates[code]), tone: "muted" });
+      }
+    });
+  }
+  return items;
+}
+
+function renderTicker() {
+  if (!elements.tickerTape) return;
+  const items = buildTickerItems();
+  if (!items.length) {
+    elements.tickerTape.innerHTML = `<span class="ticker-item muted">正在加载全球行情带...</span>`;
+    return;
+  }
+  const markup = items.map((item) => `
+    <span class="ticker-item ${item.tone}">
+      <b>${escapeHtml(item.label)}</b>
+      <span>${escapeHtml(item.value)}</span>
+    </span>
+  `).join("");
+  elements.tickerTape.innerHTML = `${markup}${markup}`;
+}
+
+function renderBriefingPanel() {
+  const briefing = state.briefing;
+  if (!elements.briefingHighlights) return;
+  if (!briefing) {
+    elements.briefingHighlights.innerHTML = `<li class="empty-state">正在生成规则简报...</li>`;
+    if (elements.briefingHeadlines) elements.briefingHeadlines.innerHTML = "";
+    if (elements.briefingStatus) elements.briefingStatus.textContent = "加载中";
+    return;
+  }
+  const highlights = Array.isArray(briefing.highlights) ? briefing.highlights : [];
+  elements.briefingHighlights.innerHTML = highlights.length
+    ? highlights.map((line) => `<li>${escapeHtml(line)}</li>`).join("")
+    : `<li class="empty-state">暂无要点</li>`;
+  if (elements.briefingHeadlines) {
+    const headlines = Array.isArray(briefing.headlines) ? briefing.headlines : [];
+    elements.briefingHeadlines.innerHTML = headlines.length
+      ? headlines.slice(0, 6).map((item) => {
+          const title = escapeHtml(item.title || "");
+          const url = item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : `<span>${title}</span>`;
+          return `<article class="headline-card">${url}<small>${escapeHtml(item.source || "News")}</small></article>`;
+        }).join("")
+      : `<div class="empty-state">暂无快讯标题</div>`;
+  }
+  if (elements.briefingStatus) {
+    elements.briefingStatus.textContent = highlights.length ? "规则引擎" : "部分可用";
+    elements.briefingStatus.className = `pill ${highlights.length ? "ok" : "warn"}`;
+  }
+}
+
+function renderRegionHeatmap() {
+  if (!elements.regionHeatmap) return;
+  const regions = state.briefing?.marketPulse?.regions || [];
+  if (!regions.length) {
+    elements.regionHeatmap.innerHTML = `<div class="empty-state">区域数据加载中...</div>`;
+    if (elements.pulseSummary) elements.pulseSummary.textContent = "--";
+    return;
+  }
+  elements.regionHeatmap.innerHTML = regions.map((region) => {
+    const total = region.total || 0;
+    const up = region.up || 0;
+    const down = region.down || 0;
+    const ratio = total ? (up - down) / total : 0;
+    const tone = ratio > 0.2 ? "up" : ratio < -0.2 ? "down" : "muted";
+    const active = state.regionFilter === region.id ? "active" : "";
+    return `
+      <button type="button" class="region-card ${tone} ${active}" data-region-filter="${escapeHtml(region.id)}" aria-pressed="${active ? "true" : "false"}">
+        <strong>${escapeHtml(region.label || region.id)}</strong>
+        <span>${up} 涨 / ${down} 跌</span>
+        <small>${total} 指数</small>
+      </button>
+    `;
+  }).join("");
+  const pulse = state.briefing.marketPulse;
+  if (elements.pulseSummary) {
+    elements.pulseSummary.textContent = pulse ? `${pulse.up} 涨 / ${pulse.down} 跌` : "--";
+    elements.pulseSummary.className = "pill ok";
+  }
+}
+
+function renderQuoteCards(container, rows, emptyText) {
+  if (!container) return;
+  if (!rows || !rows.length) {
+    container.innerHTML = `<div class="empty-state">${escapeHtml(emptyText)}</div>`;
+    return;
+  }
+  container.innerHTML = rows.map((item) => {
+    const tone = item.change > 0 ? "up" : item.change < 0 ? "down" : "muted";
+    return `
+      <article class="quote-card ${tone}">
+        <header>
+          <strong>${escapeHtml(item.zhName || item.name || item.symbol)}</strong>
+          <span>${escapeHtml(item.symbol || "")}</span>
+        </header>
+        <div class="quote-value">${Number.isFinite(item.price) ? formatNumber(item.price, item.price > 100 ? 2 : 4) : "--"}</div>
+        <footer>
+          <span class="${tone}">${Number.isFinite(item.changePct) ? formatPercent(item.changePct) : signedNumber(item.change)}</span>
+          ${sourceLatencyBadge(item)}
+        </footer>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderMacroPanels() {
+  const briefing = state.briefing;
+  renderQuoteCards(elements.macroCards, briefing?.macro || [], "宏观数据加载中...");
+  renderQuoteCards(elements.commodityCards, briefing?.commodities || [], "商品数据加载中...");
+  const cryptoRows = [...(briefing?.crypto || [])];
+  if (briefing?.fearGreed && Number.isFinite(briefing.fearGreed.value)) {
+    cryptoRows.push({
+      symbol: "FNG",
+      zhName: "恐惧贪婪",
+      name: "Fear & Greed",
+      price: briefing.fearGreed.value,
+      changePct: NaN,
+      source: briefing.fearGreed.source,
+      updatedAt: briefing.fearGreed.updatedAt
+    });
+  }
+  renderQuoteCards(elements.cryptoCards, cryptoRows, "加密数据加载中...");
+  if (elements.fearGreedLabel) {
+    const fear = briefing?.fearGreed;
+    elements.fearGreedLabel.textContent = fear && Number.isFinite(fear.value)
+      ? `${Math.round(fear.value)} · ${fear.label || "情绪指数"}`
+      : "--";
+  }
+}
+
+function watchlistRows() {
+  const rows = [];
+  const briefing = state.briefing;
+  if (briefing) {
+    rows.push(...(briefing.macro || []).map((item) => ({ ...item, group: item.group || "rates" })));
+    rows.push(...(briefing.commodities || []).map((item) => ({ ...item, group: item.group || "commodities" })));
+    rows.push(...(briefing.crypto || []).map((item) => ({ ...item, group: item.group || "crypto" })));
+  }
+  rows.push(...state.indices.map((item) => ({ ...item, group: "equity_index" })));
+  const query = state.query.trim().toLowerCase();
+  return rows.filter((item) => {
+    if (state.regionFilter && item.region && item.region !== state.regionFilter) return false;
+    if (!query) return true;
+    return `${item.zhName || ""} ${item.name || ""} ${item.symbol || ""} ${item.group || ""}`.toLowerCase().includes(query);
+  });
+}
+
+function renderWatchlist() {
+  if (!elements.watchlistBody) return;
+  const rows = watchlistRows();
+  elements.watchlistBody.innerHTML = rows.length
+    ? rows.map((item) => {
+        const tone = item.change > 0 ? "up" : item.change < 0 ? "down" : "muted";
+        const clickable = item.group === "equity_index" && item.symbol
+          ? `class="index-row" data-index-symbol="${escapeHtml(item.symbol)}" tabindex="0"`
+          : "";
+        return `
+          <tr ${clickable}>
+            <td><span class="index-zh">${escapeHtml(item.zhName || item.name || item.symbol)}</span><span class="index-en">${escapeHtml(item.symbol || "")}</span></td>
+            <td>${escapeHtml(assetGroupLabel(item.group))}</td>
+            <td>${Number.isFinite(item.price) ? formatNumber(item.price, 2) : "--"}</td>
+            <td class="${tone}">${Number.isFinite(item.change) ? signedNumber(item.change) : "--"}</td>
+            <td class="${tone}">${Number.isFinite(item.changePct) ? formatPercent(item.changePct) : "--"}</td>
+            <td>${escapeHtml(item.source || "--")}</td>
+            <td>${sourceLatencyBadge(item)}</td>
+          </tr>
+        `;
+      }).join("")
+    : `<tr><td colspan="7" class="empty-state">没有匹配的观察项</td></tr>`;
+  if (elements.watchlistStatus) {
+    elements.watchlistStatus.textContent = `${rows.length} 项`;
+    elements.watchlistStatus.className = "pill ok";
+  }
+}
+
+function renderTerminal() {
+  renderTicker();
+  renderBriefingPanel();
+  renderRegionHeatmap();
+  renderMacroPanels();
+  renderWatchlist();
+}
 
 function formatNumber(value, maximumFractionDigits = 4) {
   if (!Number.isFinite(value)) return "--";
@@ -1522,44 +1669,6 @@ function drawGeoLine(ctx, points) {
   if (drawing) ctx.stroke();
 }
 
-function drawLandMasses(ctx) {
-  withGlobeClip(ctx, () => {
-    LAND_MASSES.forEach((land) => drawProjectedLand(ctx, land.points));
-  });
-}
-
-function drawProjectedLand(ctx, points) {
-  const projected = points.map(([lat, lon]) => projectLatLon(lat, lon));
-  const visiblePoints = projected.filter((point) => point.visible);
-  if (visiblePoints.length < 3) return;
-
-  ctx.save();
-  ctx.beginPath();
-  visiblePoints.forEach((point, index) => {
-    if (index === 0) {
-      ctx.moveTo(point.x, point.y);
-      return;
-    }
-    ctx.lineTo(point.x, point.y);
-  });
-  ctx.closePath();
-
-  const averageDepth = visiblePoints.reduce((sum, point) => sum + point.depth, 0) / visiblePoints.length;
-  ctx.globalAlpha = Math.max(0.45, Math.min(0.9, averageDepth + 0.24));
-  ctx.fillStyle = "rgba(71, 204, 148, 0.24)";
-  ctx.fill();
-  ctx.shadowColor = "rgba(104, 255, 207, 0.35)";
-  ctx.shadowBlur = 14;
-  ctx.strokeStyle = "rgba(150, 255, 214, 0.72)";
-  ctx.lineWidth = 1.35;
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = "rgba(15, 59, 70, 0.45)";
-  ctx.lineWidth = 0.7;
-  ctx.stroke();
-  ctx.restore();
-}
-
 function withGlobeClip(ctx, drawer) {
   ctx.save();
   ctx.beginPath();
@@ -1779,6 +1888,7 @@ function filteredFxRows() {
 function filteredIndexRows() {
   const query = state.query.trim().toLowerCase();
   return state.indices.filter((item) => {
+    if (state.regionFilter && item.region && item.region !== state.regionFilter) return false;
     if (!query) return true;
     return `${item.zhName || ""} ${item.name} ${item.symbol}`.toLowerCase().includes(query);
   });
@@ -2185,6 +2295,7 @@ function renderStatus(message, tone = "default") {
 }
 
 function renderAll() {
+  renderTerminal();
   renderFx();
   renderIndices();
   renderConverter();
@@ -2375,6 +2486,33 @@ function bindEvents() {
     elements.toCurrency.value = currentFrom;
     renderConverter();
   });
+
+  if (elements.regionHeatmap) {
+    elements.regionHeatmap.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : event.target.parentElement;
+      const card = target && target.closest("[data-region-filter]");
+      if (!card) return;
+      const next = card.dataset.regionFilter;
+      state.regionFilter = state.regionFilter === next ? "" : next;
+      scheduleRender();
+    });
+  }
+
+  if (elements.watchlistBody) {
+    elements.watchlistBody.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : event.target.parentElement;
+      if (!target || target.closest("a, button")) return;
+      const row = target.closest("[data-index-symbol]");
+      if (row) openIndexDetail(row.dataset.indexSymbol);
+    });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      elements.searchInput?.focus();
+    }
+  });
 }
 
 function loadCachedState() {
@@ -2414,9 +2552,54 @@ function loadCachedState() {
       monthly: cachedTrends.monthly || {}
     };
   }
+  const cachedBriefing = readCache(CACHE_KEYS.briefing);
+  if (cachedBriefing) state.briefing = cachedBriefing;
 }
 
-function boot() {
+async function loadMarketConfig() {
+  const useBackend = location.protocol === "http:" || location.protocol === "https:";
+  const sources = useBackend ? ["/api/config", "/market-config.json"] : ["/market-config.json"];
+
+  for (const source of sources) {
+    try {
+      const config = await fetchJson(source, { timeout: 5000 });
+      if (!config || !Array.isArray(config.currencies) || !Array.isArray(config.indexSymbols)) {
+        throw new Error("Invalid market config payload");
+      }
+      CURRENCIES = config.currencies;
+      INDEX_SYMBOLS = config.indexSymbols;
+      REQUIRED_CURRENCY_CODES = Array.isArray(config.coreCurrencies)
+        ? config.coreCurrencies
+        : CURRENCIES.map((currency) => currency.code);
+      AUTO_REFRESH_MS = Number(config.autoRefreshSeconds || 20) * 1000;
+      if (config.fallbackFx) {
+        FALLBACK_FX = { ...config.fallbackFx, stale: true };
+      }
+      if (elements.productTitle && config.productName) {
+        elements.productTitle.textContent = config.productName;
+        document.title = `${config.productName} · 全球行情读卡器`;
+      }
+      if (elements.productTagline && config.productTagline) {
+        elements.productTagline.textContent = config.productTagline;
+      }
+      return;
+    } catch (error) {
+      console.warn(`Market config source failed: ${source}`, error);
+    }
+  }
+
+  throw new Error("Unable to load market-config.json");
+}
+
+async function boot() {
+  try {
+    await loadMarketConfig();
+  } catch (error) {
+    console.error(error);
+    renderStatus("市场配置加载失败，请确认 market-config.json 可访问。", "warn");
+    return;
+  }
+
   loadCachedState();
   applyTheme();
   applyColorMode();

@@ -641,12 +641,9 @@ label span,
 }
 
 .pill.ok {
-  animation: pillPop 420ms ease;
-}
-
-.pill.ok {
   background: rgba(19, 131, 77, 0.12);
   color: var(--up);
+  animation: pillPop 420ms ease;
 }
 
 .pill.warn {

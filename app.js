@@ -1,21 +1,8 @@
-const CURRENCIES = [
-  { code: "USD", name: "美元" },
-  { code: "CNY", name: "人民币" },
-  { code: "EUR", name: "欧元" },
-  { code: "JPY", name: "日元" },
-  { code: "GBP", name: "英镑" },
-  { code: "HKD", name: "港币" },
-  { code: "AUD", name: "澳元" },
-  { code: "CAD", name: "加元" },
-  { code: "CHF", name: "瑞郎" },
-  { code: "SGD", name: "新加坡元" },
-  { code: "KRW", name: "韩元" },
-  { code: "INR", name: "印度卢比" }
-];
-
-const AUTO_REFRESH_MS = 20000;
+let CURRENCIES = [];
+let INDEX_SYMBOLS = [];
+let AUTO_REFRESH_MS = 20000;
 const DEFAULT_BASE_CURRENCY = "USD";
-const REQUIRED_CURRENCY_CODES = CURRENCIES.map((currency) => currency.code);
+let REQUIRED_CURRENCY_CODES = [];
 const BEIJING_TIME_ZONE = "Asia/Shanghai";
 const LOCAL_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || BEIJING_TIME_ZONE;
 const TREND_MODES = [
@@ -32,86 +19,6 @@ const WORLD_CLOCKS = [
   { city: "法兰克福", market: "德国", timeZone: "Europe/Berlin", lat: 50.1109, lon: 8.6821 },
   { city: "东京", market: "日本", timeZone: "Asia/Tokyo", lat: 35.6762, lon: 139.6503 },
   { city: "香港", market: "中国香港", timeZone: "Asia/Hong_Kong", lat: 22.3193, lon: 114.1694 }
-];
-
-const LAND_MASSES = [
-  {
-    name: "北美洲",
-    points: [
-      [72, -168], [68, -144], [61, -128], [56, -124], [50, -126], [45, -123], [39, -124],
-      [32, -117], [27, -111], [23, -106], [17, -99], [14, -92], [9, -83], [18, -76],
-      [25, -80], [31, -82], [36, -76], [42, -70], [48, -64], [54, -58], [60, -64],
-      [66, -78], [72, -92], [74, -122], [72, -168]
-    ]
-  },
-  {
-    name: "格陵兰",
-    points: [
-      [83, -62], [80, -34], [74, -18], [66, -24], [60, -42], [62, -56], [70, -72], [78, -72], [83, -62]
-    ]
-  },
-  {
-    name: "南美洲",
-    points: [
-      [12, -82], [8, -74], [2, -79], [-5, -78], [-12, -74], [-18, -70], [-24, -66],
-      [-32, -70], [-42, -72], [-55, -68], [-54, -60], [-45, -58], [-36, -54], [-28, -48],
-      [-18, -39], [-9, -36], [-3, -44], [5, -52], [10, -62], [12, -82]
-    ]
-  },
-  {
-    name: "欧洲",
-    points: [
-      [72, -10], [68, 8], [61, 18], [56, 28], [50, 30], [45, 22], [41, 15],
-      [37, 8], [40, 0], [44, -6], [50, -5], [55, -10], [60, -8], [64, -20], [72, -10]
-    ]
-  },
-  {
-    name: "非洲",
-    points: [
-      [36, -17], [34, 4], [31, 18], [25, 32], [12, 42], [4, 39], [-5, 34], [-15, 28],
-      [-25, 24], [-34, 18], [-35, 10], [-28, 4], [-18, -5], [-4, -13], [8, -17], [20, -16], [30, -10], [36, -17]
-    ]
-  },
-  {
-    name: "亚洲",
-    points: [
-      [71, 32], [68, 56], [62, 82], [58, 104], [53, 126], [45, 142], [36, 138],
-      [31, 124], [25, 116], [19, 108], [10, 103], [7, 96], [18, 80], [24, 66],
-      [28, 52], [36, 42], [43, 36], [52, 32], [60, 28], [71, 32]
-    ]
-  },
-  {
-    name: "印度次大陆",
-    points: [
-      [28, 68], [25, 78], [21, 87], [15, 82], [8, 78], [6, 73], [15, 70], [22, 67], [28, 68]
-    ]
-  },
-  {
-    name: "东南亚",
-    points: [
-      [22, 96], [18, 106], [10, 108], [1, 103], [-6, 106], [-8, 116], [-3, 124],
-      [6, 121], [12, 114], [20, 110], [22, 96]
-    ]
-  },
-  {
-    name: "日本列岛",
-    points: [
-      [45, 140], [41, 143], [37, 141], [33, 136], [31, 130], [35, 132], [40, 136], [45, 140]
-    ]
-  },
-  {
-    name: "大洋洲",
-    points: [
-      [-10, 113], [-16, 122], [-22, 132], [-28, 142], [-37, 150], [-44, 146], [-39, 134],
-      [-31, 124], [-24, 113], [-16, 112], [-10, 113]
-    ]
-  },
-  {
-    name: "马达加斯加",
-    points: [
-      [-12, 49], [-19, 51], [-25, 48], [-22, 44], [-15, 43], [-12, 49]
-    ]
-  }
 ];
 
 const OFFICIAL_FX_SOURCES = {
@@ -141,19 +48,6 @@ const OFFICIAL_FX_SOURCES = {
 
 const ECB_SUPPORTED_CURRENCIES = new Set(["USD", "CNY", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "CHF", "SGD", "KRW", "INR"]);
 
-const INDEX_SYMBOLS = [
-  { name: "S&P 500", zhName: "标普500指数", symbol: "^GSPC", stooq: ["^spx", "^gspc"], timeZone: "America/New_York", timeZoneLabel: "美东时间", detailUrl: "https://www.spglobal.com/spdji/en/indices/equity/sp-500/" },
-  { name: "Nasdaq Composite", zhName: "纳斯达克综合指数", symbol: "^IXIC", stooq: ["^ndq", "^comp", "^ixic"], timeZone: "America/New_York", timeZoneLabel: "美东时间", detailUrl: "https://www.nasdaq.com/market-activity/index/comp" },
-  { name: "Dow Jones Industrial Average", zhName: "道琼斯工业平均指数", symbol: "^DJI", stooq: ["^dji"], timeZone: "America/New_York", timeZoneLabel: "美东时间", detailUrl: "https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/" },
-  { name: "FTSE 100", zhName: "富时100指数", symbol: "^FTSE", stooq: ["^uk100", "^ukx", "^ftse"], timeZone: "Europe/London", timeZoneLabel: "伦敦时间", detailUrl: "https://www.lseg.com/en/ftse-russell/indices/uk" },
-  { name: "DAX", zhName: "德国DAX指数", symbol: "^GDAXI", stooq: ["^dax"], timeZone: "Europe/Berlin", timeZoneLabel: "法兰克福时间", detailUrl: "https://www.dax-indices.com/" },
-  { name: "CAC 40", zhName: "法国CAC40指数", symbol: "^FCHI", stooq: ["^cac"], timeZone: "Europe/Paris", timeZoneLabel: "巴黎时间", detailUrl: "https://live.euronext.com/en/product/indices/FR0003500008-XPAR" },
-  { name: "Nikkei 225", zhName: "日经225指数", symbol: "^N225", stooq: ["^nkx", "^n225"], timeZone: "Asia/Tokyo", timeZoneLabel: "东京时间", detailUrl: "https://indexes.nikkei.co.jp/en/nkave/index/profile?idx=nk225" },
-  { name: "Hang Seng Index", zhName: "恒生指数", symbol: "^HSI", stooq: ["^hsi"], timeZone: "Asia/Hong_Kong", timeZoneLabel: "香港时间", detailUrl: "https://www.hsi.com.hk/eng/indexes/all-indexes/hsi" },
-  { name: "Shanghai Composite", zhName: "上证综合指数", symbol: "000001.SS", stooq: ["^shc", "^ssec"], timeZone: "Asia/Shanghai", timeZoneLabel: "上海时间", detailUrl: "https://english.sse.com.cn/markets/indices/overview/" },
-  { name: "CSI 300", zhName: "沪深300指数", symbol: "000300.SS", stooq: ["csi300", "^csi300"], timeZone: "Asia/Shanghai", timeZoneLabel: "上海时间", detailUrl: "https://www.csindex.com.cn/en/indices/index-detail/000300" }
-];
-
 const CACHE_KEYS = {
   fx: "financialAssistant.fx.v1",
   indices: "financialAssistant.indices.v2",
@@ -164,7 +58,7 @@ const CACHE_KEYS = {
   trendMode: "financialAssistant.trendMode.v1"
 };
 
-const FALLBACK_FX = {
+let FALLBACK_FX = {
   base: "USD",
   timestamp: null,
   timeZone: "UTC",
@@ -1461,44 +1355,6 @@ function drawGeoLine(ctx, points) {
   if (drawing) ctx.stroke();
 }
 
-function drawLandMasses(ctx) {
-  withGlobeClip(ctx, () => {
-    LAND_MASSES.forEach((land) => drawProjectedLand(ctx, land.points));
-  });
-}
-
-function drawProjectedLand(ctx, points) {
-  const projected = points.map(([lat, lon]) => projectLatLon(lat, lon));
-  const visiblePoints = projected.filter((point) => point.visible);
-  if (visiblePoints.length < 3) return;
-
-  ctx.save();
-  ctx.beginPath();
-  visiblePoints.forEach((point, index) => {
-    if (index === 0) {
-      ctx.moveTo(point.x, point.y);
-      return;
-    }
-    ctx.lineTo(point.x, point.y);
-  });
-  ctx.closePath();
-
-  const averageDepth = visiblePoints.reduce((sum, point) => sum + point.depth, 0) / visiblePoints.length;
-  ctx.globalAlpha = Math.max(0.45, Math.min(0.9, averageDepth + 0.24));
-  ctx.fillStyle = "rgba(71, 204, 148, 0.24)";
-  ctx.fill();
-  ctx.shadowColor = "rgba(104, 255, 207, 0.35)";
-  ctx.shadowBlur = 14;
-  ctx.strokeStyle = "rgba(150, 255, 214, 0.72)";
-  ctx.lineWidth = 1.35;
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = "rgba(15, 59, 70, 0.45)";
-  ctx.lineWidth = 0.7;
-  ctx.stroke();
-  ctx.restore();
-}
-
 function withGlobeClip(ctx, drawer) {
   ctx.save();
   ctx.beginPath();
@@ -2327,7 +2183,41 @@ function loadCachedState() {
   }
 }
 
-function boot() {
+async function loadMarketConfig() {
+  const useBackend = location.protocol === "http:" || location.protocol === "https:";
+  const sources = useBackend ? ["/api/config", "/market-config.json"] : ["/market-config.json"];
+
+  for (const source of sources) {
+    try {
+      const config = await fetchJson(source, { timeout: 5000 });
+      if (!config || !Array.isArray(config.currencies) || !Array.isArray(config.indexSymbols)) {
+        throw new Error("Invalid market config payload");
+      }
+      CURRENCIES = config.currencies;
+      INDEX_SYMBOLS = config.indexSymbols;
+      REQUIRED_CURRENCY_CODES = CURRENCIES.map((currency) => currency.code);
+      AUTO_REFRESH_MS = Number(config.autoRefreshSeconds || 20) * 1000;
+      if (config.fallbackFx) {
+        FALLBACK_FX = { ...config.fallbackFx, stale: true };
+      }
+      return;
+    } catch (error) {
+      console.warn(`Market config source failed: ${source}`, error);
+    }
+  }
+
+  throw new Error("Unable to load market-config.json");
+}
+
+async function boot() {
+  try {
+    await loadMarketConfig();
+  } catch (error) {
+    console.error(error);
+    renderStatus("市场配置加载失败，请确认 market-config.json 可访问。", "warn");
+    return;
+  }
+
   loadCachedState();
   applyTheme();
   applyColorMode();

@@ -4,6 +4,7 @@ import csv
 import json
 import math
 import mimetypes
+import os
 import ssl
 import sys
 import threading
@@ -19,11 +20,13 @@ from typing import Any, Callable
 from urllib.parse import parse_qs, quote, unquote, urlparse
 from urllib.request import Request, urlopen
 
+from sources.briefing import BriefingService
+
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "market-config.json"
-HOST = "127.0.0.1"
-PORT = 18765
+HOST = os.environ.get("HOST", "127.0.0.1")
+PORT = int(os.environ.get("PORT", "18765"))
 TREND_MODES = {"intraday", "daily", "monthly"}
 
 
@@ -35,7 +38,10 @@ def load_market_config() -> dict[str, Any]:
 MARKET_CONFIG = load_market_config()
 AUTO_REFRESH_SECONDS = int(MARKET_CONFIG.get("autoRefreshSeconds", 20))
 CURRENCIES = MARKET_CONFIG["currencies"]
-REQUIRED_CURRENCIES = [item["code"] for item in CURRENCIES]
+REQUIRED_CURRENCIES = MARKET_CONFIG.get(
+    "coreCurrencies",
+    [item["code"] for item in CURRENCIES[:12]],
+)
 INDEX_SYMBOLS = MARKET_CONFIG["indexSymbols"]
 FALLBACK_FX = MARKET_CONFIG["fallbackFx"]
 
@@ -395,6 +401,7 @@ class MarketDataService:
             "timeZoneLabel": index["timeZoneLabel"],
             "detailUrl": index["detailUrl"],
             "source": "Yahoo Finance Chart",
+            "region": index.get("region", "global"),
         }
 
     def _fetch_yahoo_trend(self, index: dict[str, Any], mode: str) -> dict[str, Any]:
@@ -548,6 +555,7 @@ class MarketDataService:
 
 
 service = MarketDataService()
+briefing_service = BriefingService(MARKET_CONFIG, service.fetch_indices)
 app = MiniApp()
 
 
@@ -577,6 +585,22 @@ def api_health(_: RequestContext) -> dict[str, Any]:
 @app.get("/api/config")
 def api_config(_: RequestContext) -> dict[str, Any]:
     return {"ok": True, **MARKET_CONFIG}
+
+
+@app.get("/api/briefing")
+def api_briefing(_: RequestContext) -> dict[str, Any]:
+    return briefing_service.build_briefing()
+
+
+@app.get("/api/sources")
+def api_sources(_: RequestContext) -> dict[str, Any]:
+    return briefing_service.list_sources()
+
+
+@app.get("/api/quotes")
+def api_quotes(context: RequestContext) -> dict[str, Any]:
+    group = context.query_one("group", "")
+    return briefing_service.fetch_quotes(group)
 
 
 def normalize_currency(value: str) -> str:
@@ -801,6 +825,7 @@ def map_stooq_index(index: dict[str, Any], row: dict[str, str]) -> dict[str, Any
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Stooq",
+        "region": index.get("region", "global"),
     }
 
 
@@ -833,6 +858,7 @@ def map_sina_us_global_index(index: dict[str, Any], fields: list[str]) -> dict[s
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Sina Finance Global",
+        "region": index.get("region", "global"),
     }
 
 
@@ -866,6 +892,7 @@ def map_sina_b_global_index(index: dict[str, Any], fields: list[str]) -> dict[st
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Sina Finance Global",
+        "region": index.get("region", "global"),
     }
 
 
@@ -897,6 +924,7 @@ def map_sina_cn_index(index: dict[str, Any], fields: list[str]) -> dict[str, Any
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Sina Finance",
+        "region": index.get("region", "global"),
     }
 
 
@@ -930,6 +958,7 @@ def map_sina_hk_index(index: dict[str, Any], fields: list[str]) -> dict[str, Any
         "timeZoneLabel": index["timeZoneLabel"],
         "detailUrl": index["detailUrl"],
         "source": "Sina Finance",
+        "region": index.get("region", "global"),
     }
 
 
@@ -1087,6 +1116,7 @@ def unavailable_index(index: dict[str, Any]) -> dict[str, Any]:
         "detailUrl": index.get("detailUrl", ""),
         "source": "暂不可用",
         "unavailable": True,
+        "region": index.get("region", "global"),
     }
 
 

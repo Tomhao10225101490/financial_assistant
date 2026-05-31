@@ -1,5 +1,7 @@
 {
   "autoRefreshSeconds": 20,
+  "productName": "MarketRadar",
+  "productTagline": "全球行情读卡器 · 免费多源融合终端",
   "currencies": [
     { "code": "USD", "name": "美元" },
     { "code": "CNY", "name": "人民币" },
@@ -12,13 +14,32 @@
     { "code": "CHF", "name": "瑞郎" },
     { "code": "SGD", "name": "新加坡元" },
     { "code": "KRW", "name": "韩元" },
-    { "code": "INR", "name": "印度卢比" }
+    { "code": "INR", "name": "印度卢比" },
+    { "code": "NZD", "name": "新西兰元" },
+    { "code": "MXN", "name": "墨西哥比索" },
+    { "code": "BRL", "name": "巴西雷亚尔" },
+    { "code": "ZAR", "name": "南非兰特" },
+    { "code": "SEK", "name": "瑞典克朗" },
+    { "code": "NOK", "name": "挪威克朗" },
+    { "code": "DKK", "name": "丹麦克朗" },
+    { "code": "PLN", "name": "波兰兹罗提" },
+    { "code": "THB", "name": "泰铢" },
+    { "code": "MYR", "name": "马来西亚林吉特" },
+    { "code": "IDR", "name": "印尼盾" },
+    { "code": "PHP", "name": "菲律宾比索" },
+    { "code": "TWD", "name": "新台币" },
+    { "code": "AED", "name": "阿联酋迪拉姆" },
+    { "code": "SAR", "name": "沙特里亚尔" },
+    { "code": "TRY", "name": "土耳其里拉" },
+    { "code": "RUB", "name": "俄罗斯卢布" },
+    { "code": "ILS", "name": "以色列谢克尔" }
   ],
   "indexSymbols": [
     {
       "name": "S&P 500",
       "zhName": "标普500指数",
       "symbol": "^GSPC",
+      "region": "americas",
       "sinaGlobal": "gb_$inx",
       "sinaType": "us",
       "sinaDaily": ".inx",
@@ -31,6 +52,7 @@
       "name": "Nasdaq Composite",
       "zhName": "纳斯达克综合指数",
       "symbol": "^IXIC",
+      "region": "americas",
       "sinaGlobal": "gb_ixic",
       "sinaType": "us",
       "sinaDaily": ".ixic",
@@ -43,6 +65,7 @@
       "name": "Dow Jones Industrial Average",
       "zhName": "道琼斯工业平均指数",
       "symbol": "^DJI",
+      "region": "americas",
       "sinaGlobal": "gb_$dji",
       "sinaType": "us",
       "sinaDaily": ".dji",
@@ -52,9 +75,30 @@
       "detailUrl": "https://www.spglobal.com/spdji/en/indices/equity/dow-jones-industrial-average/"
     },
     {
+      "name": "Russell 2000",
+      "zhName": "罗素2000指数",
+      "symbol": "^RUT",
+      "region": "americas",
+      "stooq": ["^rut"],
+      "timeZone": "America/New_York",
+      "timeZoneLabel": "美东时间",
+      "detailUrl": "https://www.russell.com/index/"
+    },
+    {
+      "name": "VIX",
+      "zhName": "VIX恐慌指数",
+      "symbol": "^VIX",
+      "region": "americas",
+      "stooq": ["^vix"],
+      "timeZone": "America/New_York",
+      "timeZoneLabel": "美东时间",
+      "detailUrl": "https://www.cboe.com/tradable_products/vix/"
+    },
+    {
       "name": "FTSE 100",
       "zhName": "富时100指数",
       "symbol": "^FTSE",
+      "region": "europe",
       "sinaGlobal": "b_FTSE",
       "sinaType": "b",
       "stooq": ["^uk100", "^ukx", "^ftse"],
@@ -66,6 +110,7 @@
       "name": "DAX",
       "zhName": "德国DAX指数",
       "symbol": "^GDAXI",
+      "region": "europe",
       "sinaGlobal": "b_DAX",
       "sinaType": "b",
       "stooq": ["^dax"],
@@ -77,6 +122,7 @@
       "name": "CAC 40",
       "zhName": "法国CAC40指数",
       "symbol": "^FCHI",
+      "region": "europe",
       "sinaGlobal": "b_CAC",
       "sinaType": "b",
       "stooq": ["^cac"],
@@ -85,9 +131,20 @@
       "detailUrl": "https://live.euronext.com/en/product/indices/FR0003500008-XPAR"
     },
     {
+      "name": "STOXX Europe 600",
+      "zhName": "欧洲斯托克600",
+      "symbol": "^STOXX",
+      "region": "europe",
+      "stooq": ["^stoxx"],
+      "timeZone": "Europe/Berlin",
+      "timeZoneLabel": "欧洲时间",
+      "detailUrl": "https://www.stoxx.com/"
+    },
+    {
       "name": "Nikkei 225",
       "zhName": "日经225指数",
       "symbol": "^N225",
+      "region": "asia",
       "sinaGlobal": "b_NKY",
       "sinaType": "b",
       "stooq": ["^nkx", "^n225"],
@@ -99,6 +156,7 @@
       "name": "Hang Seng Index",
       "zhName": "恒生指数",
       "symbol": "^HSI",
+      "region": "asia",
       "stooq": ["^hsi"],
       "sina": "rt_hkHSI",
       "timeZone": "Asia/Hong_Kong",
@@ -109,6 +167,7 @@
       "name": "Shanghai Composite",
       "zhName": "上证综合指数",
       "symbol": "000001.SS",
+      "region": "asia",
       "stooq": ["^shc", "^ssec"],
       "sina": "sh000001",
       "timeZone": "Asia/Shanghai",
@@ -119,13 +178,128 @@
       "name": "CSI 300",
       "zhName": "沪深300指数",
       "symbol": "000300.SS",
+      "region": "asia",
       "stooq": ["csi300", "^csi300"],
       "sina": "sh000300",
       "timeZone": "Asia/Shanghai",
       "timeZoneLabel": "上海时间",
       "detailUrl": "https://www.csindex.com.cn/en/indices/index-detail/000300"
+    },
+    {
+      "name": "Kospi",
+      "zhName": "韩国综合指数",
+      "symbol": "^KS11",
+      "region": "asia",
+      "stooq": ["^kospi"],
+      "timeZone": "Asia/Seoul",
+      "timeZoneLabel": "首尔时间",
+      "detailUrl": "https://index.krx.co.kr/"
+    },
+    {
+      "name": "ASX 200",
+      "zhName": "澳洲ASX200",
+      "symbol": "^AXJO",
+      "region": "asia",
+      "stooq": ["^axjo"],
+      "timeZone": "Australia/Sydney",
+      "timeZoneLabel": "悉尼时间",
+      "detailUrl": "https://www.asx.com.au/"
+    },
+    {
+      "name": "Nifty 50",
+      "zhName": "印度Nifty50",
+      "symbol": "^NSEI",
+      "region": "asia",
+      "stooq": ["^nsei"],
+      "timeZone": "Asia/Kolkata",
+      "timeZoneLabel": "孟买时间",
+      "detailUrl": "https://www.nseindia.com/"
+    },
+    {
+      "name": "Taiwan Weighted",
+      "zhName": "台湾加权指数",
+      "symbol": "^TWII",
+      "region": "asia",
+      "stooq": ["^twii"],
+      "timeZone": "Asia/Taipei",
+      "timeZoneLabel": "台北时间",
+      "detailUrl": "https://www.twse.com.tw/"
+    },
+    {
+      "name": "MSCI Emerging Markets",
+      "zhName": "MSCI新兴市场",
+      "symbol": "EEM",
+      "region": "global",
+      "stooq": ["eem"],
+      "timeZone": "America/New_York",
+      "timeZoneLabel": "美东时间",
+      "detailUrl": "https://www.ishares.com/us/products/239637/"
+    },
+    {
+      "name": "MSCI World",
+      "zhName": "MSCI全球",
+      "symbol": "URTH",
+      "region": "global",
+      "stooq": ["urth"],
+      "timeZone": "America/New_York",
+      "timeZoneLabel": "美东时间",
+      "detailUrl": "https://www.ishares.com/"
+    },
+    {
+      "name": "S&P/TSX Composite",
+      "zhName": "加拿大TSX综合",
+      "symbol": "^GSPTSE",
+      "region": "americas",
+      "stooq": ["^tsx"],
+      "timeZone": "America/Toronto",
+      "timeZoneLabel": "多伦多时间",
+      "detailUrl": "https://www.spglobal.com/spdji/en/"
     }
   ],
+  "assetGroups": [
+    {
+      "id": "equity_index",
+      "label": "全球股指",
+      "items": []
+    },
+    {
+      "id": "rates",
+      "label": "利率与宏观",
+      "items": [
+        { "symbol": "DGS10", "name": "US 10Y Treasury", "zhName": "美国10年期国债", "convexId": "DGS10", "provider": "convex", "group": "rates", "region": "americas", "unit": "%" },
+        { "symbol": "DGS2", "name": "US 2Y Treasury", "zhName": "美国2年期国债", "convexId": "DGS2", "provider": "convex", "group": "rates", "region": "americas", "unit": "%" },
+        { "symbol": "T10Y2Y", "name": "10Y-2Y Spread", "zhName": "10Y-2Y利差", "convexId": "T10Y2Y", "provider": "convex", "group": "rates", "region": "americas", "unit": "bp" },
+        { "symbol": "EFFR", "name": "Fed Funds Effective", "zhName": "联邦基金利率", "convexId": "EFFR", "provider": "convex", "group": "rates", "region": "americas", "unit": "%" }
+      ]
+    },
+    {
+      "id": "volatility",
+      "label": "波动率",
+      "items": [
+        { "symbol": "VIXCLS", "name": "VIX Close", "zhName": "VIX收盘", "convexId": "VIXCLS", "provider": "convex", "group": "volatility", "region": "global", "unit": "" },
+        { "symbol": "^VIX", "name": "VIX Index", "zhName": "VIX指数", "provider": "yahoo", "group": "volatility", "region": "americas" }
+      ]
+    },
+    {
+      "id": "commodities",
+      "label": "大宗商品",
+      "items": [
+        { "symbol": "GC=F", "name": "Gold Futures", "zhName": "黄金期货", "provider": "yahoo", "group": "commodities", "region": "global" },
+        { "symbol": "CL=F", "name": "WTI Crude Oil", "zhName": "WTI原油", "provider": "yahoo", "group": "commodities", "region": "global" },
+        { "symbol": "SI=F", "name": "Silver Futures", "zhName": "白银期货", "provider": "yahoo", "group": "commodities", "region": "global" },
+        { "symbol": "NG=F", "name": "Natural Gas", "zhName": "天然气", "provider": "yahoo", "group": "commodities", "region": "global" }
+      ]
+    },
+    {
+      "id": "crypto",
+      "label": "加密资产",
+      "items": [
+        { "symbol": "BTC", "name": "Bitcoin", "zhName": "比特币", "coinGeckoId": "bitcoin", "provider": "coingecko", "group": "crypto", "region": "global" },
+        { "symbol": "ETH", "name": "Ethereum", "zhName": "以太坊", "coinGeckoId": "ethereum", "provider": "coingecko", "group": "crypto", "region": "global" }
+      ]
+    }
+  ],
+  "coreCurrencies": ["USD", "CNY", "EUR", "JPY", "GBP", "HKD", "AUD", "CAD", "CHF", "SGD", "KRW", "INR"],
   "fallbackFx": {
     "base": "USD",
     "timestamp": null,

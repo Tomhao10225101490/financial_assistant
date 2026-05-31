@@ -55,7 +55,8 @@ const CACHE_KEYS = {
   baseCurrency: "financialAssistant.baseCurrency.v1",
   theme: "financialAssistant.theme.v1",
   colorMode: "financialAssistant.colorMode.v1",
-  trendMode: "financialAssistant.trendMode.v1"
+  trendMode: "financialAssistant.trendMode.v1",
+  briefing: "financialAssistant.briefing.v1"
 };
 
 let FALLBACK_FX = {
@@ -90,9 +91,11 @@ const state = {
     daily: {},
     monthly: {}
   },
+  briefing: null,
+  regionFilter: "",
   query: "",
   baseCurrency: DEFAULT_BASE_CURRENCY,
-  theme: "light",
+  theme: "dark",
   colorMode: "green-up",
   trendMode: DEFAULT_TREND_MODE,
   detailSymbol: null,
@@ -141,7 +144,21 @@ const elements = {
   fromCurrency: document.querySelector("#fromCurrency"),
   toCurrency: document.querySelector("#toCurrency"),
   swapButton: document.querySelector("#swapButton"),
-  converterResult: document.querySelector("#converterResult")
+  converterResult: document.querySelector("#converterResult"),
+  productTitle: document.querySelector("#productTitle"),
+  productTagline: document.querySelector("#productTagline"),
+  tickerTape: document.querySelector("#tickerTape"),
+  briefingHighlights: document.querySelector("#briefingHighlights"),
+  briefingHeadlines: document.querySelector("#briefingHeadlines"),
+  briefingStatus: document.querySelector("#briefingStatus"),
+  regionHeatmap: document.querySelector("#regionHeatmap"),
+  pulseSummary: document.querySelector("#pulseSummary"),
+  macroCards: document.querySelector("#macroCards"),
+  commodityCards: document.querySelector("#commodityCards"),
+  cryptoCards: document.querySelector("#cryptoCards"),
+  watchlistBody: document.querySelector("#watchlistBody"),
+  watchlistStatus: document.querySelector("#watchlistStatus"),
+  fearGreedLabel: document.querySelector("#fearGreedLabel")
 };
 
 let renderFrame = null;
@@ -177,6 +194,242 @@ const globe = {
   paused: false,
   reducedMotion: window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 };
+
+function sourceLatencyBadge(item) {
+  if (!item || !item.updatedAt) return '<span class="source-badge">--</span>';
+  const ageMs = Date.now() - new Date(item.updatedAt).getTime();
+  const seconds = Number.isFinite(ageMs) ? Math.max(0, Math.round(ageMs / 1000)) : null;
+  const label = seconds === null ? "--" : seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)}m`;
+  const tone = seconds !== null && seconds <= 30 ? "ok" : seconds !== null && seconds <= 120 ? "warn" : "muted";
+  const source = item.source ? escapeHtml(item.source) : "未知源";
+  return `<span class="source-badge ${tone}" title="${source}">${source} · ${label}</span>`;
+}
+
+function assetGroupLabel(group) {
+  const labels = {
+    equity_index: "股指",
+    rates: "利率",
+    volatility: "波动率",
+    commodities: "商品",
+    crypto: "加密",
+    fx: "外汇"
+  };
+  return labels[group] || group || "--";
+}
+
+async function fetchBriefing() {
+  if (!hasBackendApi()) return null;
+  try {
+    const data = await fetchJson("/api/briefing", { timeout: 45000 });
+    if (!data || !data.ok) throw new Error("Invalid briefing payload");
+    writeCache(CACHE_KEYS.briefing, data);
+    return data;
+  } catch (error) {
+    console.warn("Briefing API failed.", error);
+    return readCache(CACHE_KEYS.briefing);
+  }
+}
+
+function buildTickerItems() {
+  const items = [];
+  const briefing = state.briefing;
+  if (briefing) {
+    (briefing.indices || []).slice(0, 6).forEach((item) => {
+      if (Number.isFinite(item.price)) items.push({ label: item.zhName || item.symbol, value: formatPercent(item.changePct), tone: item.change > 0 ? "up" : item.change < 0 ? "down" : "muted" });
+    });
+    (briefing.macro || []).slice(0, 3).forEach((item) => {
+      if (Number.isFinite(item.price)) items.push({ label: item.zhName || item.symbol, value: formatNumber(item.price, 2), tone: "muted" });
+    });
+    (briefing.crypto || []).slice(0, 2).forEach((item) => {
+      if (Number.isFinite(item.price)) items.push({ label: item.zhName || item.symbol, value: formatPercent(item.changePct), tone: item.changePct > 0 ? "up" : item.changePct < 0 ? "down" : "muted" });
+    });
+  }
+  if (state.fx && state.fx.rates) {
+    ["CNY", "EUR", "JPY"].forEach((code) => {
+      if (Number.isFinite(state.fx.rates[code])) {
+        items.push({ label: `${state.fx.base}/${code}`, value: formatFxRate(state.fx.rates[code]), tone: "muted" });
+      }
+    });
+  }
+  return items;
+}
+
+function renderTicker() {
+  if (!elements.tickerTape) return;
+  const items = buildTickerItems();
+  if (!items.length) {
+    elements.tickerTape.innerHTML = `<span class="ticker-item muted">正在加载全球行情带...</span>`;
+    return;
+  }
+  const markup = items.map((item) => `
+    <span class="ticker-item ${item.tone}">
+      <b>${escapeHtml(item.label)}</b>
+      <span>${escapeHtml(item.value)}</span>
+    </span>
+  `).join("");
+  elements.tickerTape.innerHTML = `${markup}${markup}`;
+}
+
+function renderBriefingPanel() {
+  const briefing = state.briefing;
+  if (!elements.briefingHighlights) return;
+  if (!briefing) {
+    elements.briefingHighlights.innerHTML = `<li class="empty-state">正在生成规则简报...</li>`;
+    if (elements.briefingHeadlines) elements.briefingHeadlines.innerHTML = "";
+    if (elements.briefingStatus) elements.briefingStatus.textContent = "加载中";
+    return;
+  }
+  const highlights = Array.isArray(briefing.highlights) ? briefing.highlights : [];
+  elements.briefingHighlights.innerHTML = highlights.length
+    ? highlights.map((line) => `<li>${escapeHtml(line)}</li>`).join("")
+    : `<li class="empty-state">暂无要点</li>`;
+  if (elements.briefingHeadlines) {
+    const headlines = Array.isArray(briefing.headlines) ? briefing.headlines : [];
+    elements.briefingHeadlines.innerHTML = headlines.length
+      ? headlines.slice(0, 6).map((item) => {
+          const title = escapeHtml(item.title || "");
+          const url = item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${title}</a>` : `<span>${title}</span>`;
+          return `<article class="headline-card">${url}<small>${escapeHtml(item.source || "News")}</small></article>`;
+        }).join("")
+      : `<div class="empty-state">暂无快讯标题</div>`;
+  }
+  if (elements.briefingStatus) {
+    elements.briefingStatus.textContent = highlights.length ? "规则引擎" : "部分可用";
+    elements.briefingStatus.className = `pill ${highlights.length ? "ok" : "warn"}`;
+  }
+}
+
+function renderRegionHeatmap() {
+  if (!elements.regionHeatmap) return;
+  const regions = state.briefing?.marketPulse?.regions || [];
+  if (!regions.length) {
+    elements.regionHeatmap.innerHTML = `<div class="empty-state">区域数据加载中...</div>`;
+    if (elements.pulseSummary) elements.pulseSummary.textContent = "--";
+    return;
+  }
+  elements.regionHeatmap.innerHTML = regions.map((region) => {
+    const total = region.total || 0;
+    const up = region.up || 0;
+    const down = region.down || 0;
+    const ratio = total ? (up - down) / total : 0;
+    const tone = ratio > 0.2 ? "up" : ratio < -0.2 ? "down" : "muted";
+    const active = state.regionFilter === region.id ? "active" : "";
+    return `
+      <button type="button" class="region-card ${tone} ${active}" data-region-filter="${escapeHtml(region.id)}" aria-pressed="${active ? "true" : "false"}">
+        <strong>${escapeHtml(region.label || region.id)}</strong>
+        <span>${up} 涨 / ${down} 跌</span>
+        <small>${total} 指数</small>
+      </button>
+    `;
+  }).join("");
+  const pulse = state.briefing.marketPulse;
+  if (elements.pulseSummary) {
+    elements.pulseSummary.textContent = pulse ? `${pulse.up} 涨 / ${pulse.down} 跌` : "--";
+    elements.pulseSummary.className = "pill ok";
+  }
+}
+
+function renderQuoteCards(container, rows, emptyText) {
+  if (!container) return;
+  if (!rows || !rows.length) {
+    container.innerHTML = `<div class="empty-state">${escapeHtml(emptyText)}</div>`;
+    return;
+  }
+  container.innerHTML = rows.map((item) => {
+    const tone = item.change > 0 ? "up" : item.change < 0 ? "down" : "muted";
+    return `
+      <article class="quote-card ${tone}">
+        <header>
+          <strong>${escapeHtml(item.zhName || item.name || item.symbol)}</strong>
+          <span>${escapeHtml(item.symbol || "")}</span>
+        </header>
+        <div class="quote-value">${Number.isFinite(item.price) ? formatNumber(item.price, item.price > 100 ? 2 : 4) : "--"}</div>
+        <footer>
+          <span class="${tone}">${Number.isFinite(item.changePct) ? formatPercent(item.changePct) : signedNumber(item.change)}</span>
+          ${sourceLatencyBadge(item)}
+        </footer>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderMacroPanels() {
+  const briefing = state.briefing;
+  renderQuoteCards(elements.macroCards, briefing?.macro || [], "宏观数据加载中...");
+  renderQuoteCards(elements.commodityCards, briefing?.commodities || [], "商品数据加载中...");
+  const cryptoRows = [...(briefing?.crypto || [])];
+  if (briefing?.fearGreed && Number.isFinite(briefing.fearGreed.value)) {
+    cryptoRows.push({
+      symbol: "FNG",
+      zhName: "恐惧贪婪",
+      name: "Fear & Greed",
+      price: briefing.fearGreed.value,
+      changePct: NaN,
+      source: briefing.fearGreed.source,
+      updatedAt: briefing.fearGreed.updatedAt
+    });
+  }
+  renderQuoteCards(elements.cryptoCards, cryptoRows, "加密数据加载中...");
+  if (elements.fearGreedLabel) {
+    const fear = briefing?.fearGreed;
+    elements.fearGreedLabel.textContent = fear && Number.isFinite(fear.value)
+      ? `${Math.round(fear.value)} · ${fear.label || "情绪指数"}`
+      : "--";
+  }
+}
+
+function watchlistRows() {
+  const rows = [];
+  const briefing = state.briefing;
+  if (briefing) {
+    rows.push(...(briefing.macro || []).map((item) => ({ ...item, group: item.group || "rates" })));
+    rows.push(...(briefing.commodities || []).map((item) => ({ ...item, group: item.group || "commodities" })));
+    rows.push(...(briefing.crypto || []).map((item) => ({ ...item, group: item.group || "crypto" })));
+  }
+  rows.push(...state.indices.map((item) => ({ ...item, group: "equity_index" })));
+  const query = state.query.trim().toLowerCase();
+  return rows.filter((item) => {
+    if (state.regionFilter && item.region && item.region !== state.regionFilter) return false;
+    if (!query) return true;
+    return `${item.zhName || ""} ${item.name || ""} ${item.symbol || ""} ${item.group || ""}`.toLowerCase().includes(query);
+  });
+}
+
+function renderWatchlist() {
+  if (!elements.watchlistBody) return;
+  const rows = watchlistRows();
+  elements.watchlistBody.innerHTML = rows.length
+    ? rows.map((item) => {
+        const tone = item.change > 0 ? "up" : item.change < 0 ? "down" : "muted";
+        const clickable = item.group === "equity_index" && item.symbol
+          ? `class="index-row" data-index-symbol="${escapeHtml(item.symbol)}" tabindex="0"`
+          : "";
+        return `
+          <tr ${clickable}>
+            <td><span class="index-zh">${escapeHtml(item.zhName || item.name || item.symbol)}</span><span class="index-en">${escapeHtml(item.symbol || "")}</span></td>
+            <td>${escapeHtml(assetGroupLabel(item.group))}</td>
+            <td>${Number.isFinite(item.price) ? formatNumber(item.price, 2) : "--"}</td>
+            <td class="${tone}">${Number.isFinite(item.change) ? signedNumber(item.change) : "--"}</td>
+            <td class="${tone}">${Number.isFinite(item.changePct) ? formatPercent(item.changePct) : "--"}</td>
+            <td>${escapeHtml(item.source || "--")}</td>
+            <td>${sourceLatencyBadge(item)}</td>
+          </tr>
+        `;
+      }).join("")
+    : `<tr><td colspan="7" class="empty-state">没有匹配的观察项</td></tr>`;
+  if (elements.watchlistStatus) {
+    elements.watchlistStatus.textContent = `${rows.length} 项`;
+    elements.watchlistStatus.className = "pill ok";
+  }
+}
+
+function renderTerminal() {
+  renderTicker();
+  renderBriefingPanel();
+  renderRegionHeatmap();
+  renderMacroPanels();
+  renderWatchlist();
+}
 
 function formatNumber(value, maximumFractionDigits = 4) {
   if (!Number.isFinite(value)) return "--";
@@ -1574,6 +1827,7 @@ function filteredFxRows() {
 function filteredIndexRows() {
   const query = state.query.trim().toLowerCase();
   return state.indices.filter((item) => {
+    if (state.regionFilter && item.region && item.region !== state.regionFilter) return false;
     if (!query) return true;
     return `${item.zhName || ""} ${item.name} ${item.symbol}`.toLowerCase().includes(query);
   });
@@ -1946,6 +2200,10 @@ function renderSummary() {
   elements.baseCurrencyHelp.textContent = `汇率以 1 ${fx.base} 为基准`;
   elements.marketBreadth.textContent = state.indices.length ? `${up} 涨 / ${down} 跌` : "--";
   elements.sourceLabel.textContent = Array.from(sources).slice(0, 3).join(" · ") || "--";
+  if (state.briefing?.meta?.sources?.length && elements.sourceLabel) {
+    const liveCount = state.briefing.meta.sources.filter((item) => item.ok).length;
+    elements.sourceLabel.textContent = `${liveCount}/${state.briefing.meta.sources.length} 频道在线`;
+  }
   elements.updatedAt.textContent = state.lastUpdatedAt
     ? formatDualTime(state.lastUpdatedAt, LOCAL_TIME_ZONE, localTimeZoneLabel())
     : "--";
@@ -1957,6 +2215,7 @@ function renderStatus(message, tone = "default") {
 }
 
 function renderAll() {
+  renderTerminal();
   renderFx();
   renderIndices();
   renderConverter();
@@ -1973,9 +2232,14 @@ async function refreshData() {
   renderAll();
 
   try {
-    const [fx, indices] = await Promise.all([fetchFxRates(state.baseCurrency), fetchIndices()]);
+    const requests = [fetchFxRates(state.baseCurrency), fetchIndices()];
+    if (hasBackendApi()) requests.push(fetchBriefing());
+    const results = await Promise.all(requests);
+    const fx = results[0];
+    const indices = results[1];
     state.fx = fx;
     state.indices = indices;
+    if (results[2]) state.briefing = results[2];
     state.lastUpdatedAt = new Date().toISOString();
 
     const hasFallback = fx.stale || indices.some((item) => item.stale || item.unavailable);
@@ -2142,6 +2406,33 @@ function bindEvents() {
     elements.toCurrency.value = currentFrom;
     renderConverter();
   });
+
+  if (elements.regionHeatmap) {
+    elements.regionHeatmap.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : event.target.parentElement;
+      const card = target && target.closest("[data-region-filter]");
+      if (!card) return;
+      const next = card.dataset.regionFilter;
+      state.regionFilter = state.regionFilter === next ? "" : next;
+      scheduleRender();
+    });
+  }
+
+  if (elements.watchlistBody) {
+    elements.watchlistBody.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target : event.target.parentElement;
+      if (!target || target.closest("a, button")) return;
+      const row = target.closest("[data-index-symbol]");
+      if (row) openIndexDetail(row.dataset.indexSymbol);
+    });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      elements.searchInput?.focus();
+    }
+  });
 }
 
 function loadCachedState() {
@@ -2181,6 +2472,8 @@ function loadCachedState() {
       monthly: cachedTrends.monthly || {}
     };
   }
+  const cachedBriefing = readCache(CACHE_KEYS.briefing);
+  if (cachedBriefing) state.briefing = cachedBriefing;
 }
 
 async function loadMarketConfig() {
@@ -2195,10 +2488,19 @@ async function loadMarketConfig() {
       }
       CURRENCIES = config.currencies;
       INDEX_SYMBOLS = config.indexSymbols;
-      REQUIRED_CURRENCY_CODES = CURRENCIES.map((currency) => currency.code);
+      REQUIRED_CURRENCY_CODES = Array.isArray(config.coreCurrencies)
+        ? config.coreCurrencies
+        : CURRENCIES.map((currency) => currency.code);
       AUTO_REFRESH_MS = Number(config.autoRefreshSeconds || 20) * 1000;
       if (config.fallbackFx) {
         FALLBACK_FX = { ...config.fallbackFx, stale: true };
+      }
+      if (elements.productTitle && config.productName) {
+        elements.productTitle.textContent = config.productName;
+        document.title = `${config.productName} · 全球行情读卡器`;
+      }
+      if (elements.productTagline && config.productTagline) {
+        elements.productTagline.textContent = config.productTagline;
       }
       return;
     } catch (error) {

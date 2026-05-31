@@ -25,6 +25,7 @@ HOST = "127.0.0.1"
 PORT = 18765
 AUTO_REFRESH_SECONDS = 20
 TREND_MODES = {"intraday", "daily", "monthly"}
+APP_VERSION = "release-20260518"
 
 CURRENCIES = [
     {"code": "USD", "name": "美元"},
@@ -132,29 +133,150 @@ class TTLCache:
         item = self.values.get(key)
         return item[1] if item else None
 
+    def age(self, key: str) -> float | None:
+        item = self.values.get(key)
+        return round(time.time() - item[0], 3) if item else None
+
+    def state(self, key: str) -> str:
+        item = self.values.get(key)
+        if not item:
+            return "empty"
+        saved_at, _ = item
+        return "fresh" if time.time() - saved_at <= self.ttl_seconds else "stale"
+
+    def snapshot(self) -> dict[str, Any]:
+        now = time.time()
+        return {
+            key: {
+                "ageSeconds": round(now - saved_at, 3),
+                "ttlSeconds": self.ttl_seconds,
+                "state": "fresh" if now - saved_at <= self.ttl_seconds else "stale",
+            }
+            for key, (saved_at, _) in self.values.items()
+        }
+
 
 class MarketDataService:
     def __init__(self) -> None:
+        self.started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         self.fx_cache = TTLCache(AUTO_REFRESH_SECONDS)
         self.index_cache = TTLCache(AUTO_REFRESH_SECONDS)
         self.trend_cache = TTLCache(180)
         self.fx_lock = threading.Lock()
         self.index_lock = threading.Lock()
         self.trend_lock = threading.Lock()
+        self.stats_lock = threading.Lock()
+        self.source_stats: dict[str, dict[str, Any]] = {}
         self.ssl_context = ssl.create_default_context()
 
+    def _elapsed_ms(self, started_at: float) -> int:
+        return int((time.perf_counter() - started_at) * 1000)
+
+    def _record_source(self, source: str, ok: bool, latency_ms: int, error: str = "") -> None:
+        now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        with self.stats_lock:
+            stat = self.source_stats.setdefault(
+                source,
+                {
+                    "success": 0,
+                    "failure": 0,
+                    "lastSuccessAt": None,
+                    "lastFailureAt": None,
+                    "lastLatencyMs": None,
+                    "lastError": "",
+                },
+            )
+            stat["lastLatencyMs"] = latency_ms
+            if ok:
+                stat["success"] += 1
+                stat["lastSuccessAt"] = now
+                stat["lastError"] = ""
+            else:
+                stat["failure"] += 1
+                stat["lastFailureAt"] = now
+                stat["lastError"] = error[:240]
+
+    def _source_snapshot(self) -> dict[str, dict[str, Any]]:
+        with self.stats_lock:
+            return {source: dict(stat) for source, stat in self.source_stats.items()}
+
+    def _decorate_fx(self, payload: dict[str, Any], cache_state: str, cache_key: str, started_at: float) -> dict[str, Any]:
+        result = dict(payload)
+        result["cacheState"] = cache_state
+        result["cacheAgeSeconds"] = self.fx_cache.age(cache_key)
+        result["latencyMs"] = self._elapsed_ms(started_at)
+        result["quality"] = result.get("quality") or ("cache" if result.get("stale") else "real")
+        result["officialSourceUrl"] = result.get("sourceUrl") or "https://www.ecb.europa.eu/stats/eurofxref"
+        result["beijingUpdatedAt"] = to_beijing_iso(result.get("timestamp"))
+        return result
+
+    def _decorate_indices(self, rows: list[dict[str, Any]], cache_state: str, started_at: float) -> list[dict[str, Any]]:
+        latency = self._elapsed_ms(started_at)
+        age = self.index_cache.age("indices")
+        decorated = []
+        for row in rows:
+            item = dict(row)
+            row_state = "stale" if item.get("stale") else cache_state
+            item["cacheState"] = row_state
+            item["cacheAgeSeconds"] = age
+            item["latencyMs"] = latency
+            item["quality"] = item.get("quality") or quality_for_index(item, row_state)
+            item["beijingUpdatedAt"] = to_beijing_iso(item.get("updatedAt"))
+            item["sourceDetailUrl"] = item.get("detailUrl")
+            decorated.append(item)
+        return decorated
+
+    def _decorate_trends(self, rows: list[dict[str, Any]], cache_state: str, cache_key: str, started_at: float) -> list[dict[str, Any]]:
+        latency = self._elapsed_ms(started_at)
+        age = self.trend_cache.age(cache_key)
+        decorated = []
+        for row in rows:
+            item = dict(row)
+            item["cacheState"] = cache_state
+            item["cacheAgeSeconds"] = age
+            item["latencyMs"] = latency
+            item["marketTimeZone"] = item.get("timeZone")
+            item["beijingUpdatedAt"] = to_beijing_iso(item.get("updatedAt"))
+            decorated.append(item)
+        return decorated
+
+    def diagnostics(self) -> dict[str, Any]:
+        return {
+            "ok": True,
+            "version": APP_VERSION,
+            "startedAt": self.started_at,
+            "serverTime": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "beijingTime": datetime.now(timezone(timedelta(hours=8))).isoformat(),
+            "autoRefreshSeconds": AUTO_REFRESH_SECONDS,
+            "cache": {
+                "fx": self.fx_cache.snapshot(),
+                "indices": self.index_cache.snapshot(),
+                "trends": self.trend_cache.snapshot(),
+            },
+            "sources": self._source_snapshot(),
+            "publicAccess": {
+                "mode": "Cloudflare Quick Tunnel",
+                "launcher": "公开访问金融小助手.bat",
+                "validWhile": "本机服务、Cloudflare 窗口和网络均保持运行",
+                "cachePolicy": "HTML/JS/JSON no-store, static assets versioned",
+                "globeAsset": "world-land-10m.json",
+            },
+        }
+
     def fetch_fx(self, base: str) -> dict[str, Any]:
+        started_at = time.perf_counter()
         normalized_base = normalize_currency(base)
         cache_key = f"fx:{normalized_base}"
         cached = self.fx_cache.get(cache_key)
         if cached:
-            return cached
+            return self._decorate_fx(cached, "fresh", cache_key, started_at)
 
         with self.fx_lock:
             cached = self.fx_cache.get(cache_key)
             if cached:
-                return cached
-            return self._fetch_fx_uncached(normalized_base, cache_key)
+                return self._decorate_fx(cached, "fresh", cache_key, started_at)
+            result = self._fetch_fx_uncached(normalized_base, cache_key)
+            return self._decorate_fx(result, result.get("cacheState", "live"), cache_key, started_at)
 
     def _fetch_fx_uncached(self, normalized_base: str, cache_key: str) -> dict[str, Any]:
         errors: list[str] = []
@@ -163,6 +285,9 @@ class MarketDataService:
                 result = fetcher(normalized_base)
                 if not has_required_rates(result["rates"]):
                     raise ValueError("missing required currencies")
+                result["cacheState"] = "live"
+                result["quality"] = "real"
+                result["errors"] = []
                 self.fx_cache.set(cache_key, result)
                 return result
             except Exception as exc:  # noqa: BLE001
@@ -170,19 +295,22 @@ class MarketDataService:
 
         stale = self.fx_cache.stale(cache_key)
         if stale:
-            return {**stale, "stale": True, "source": f'{stale["source"]} 缓存', "errors": errors}
-        return {**rebase_fx(FALLBACK_FX, normalized_base), "errors": errors}
+            return {**stale, "stale": True, "cacheState": "stale", "quality": "cache", "source": f'{stale["source"]} 缓存', "errors": errors}
+        return {**rebase_fx(FALLBACK_FX, normalized_base), "cacheState": "fallback", "quality": "fallback", "errors": errors}
 
     def fetch_indices(self) -> list[dict[str, Any]]:
+        started_at = time.perf_counter()
         cached = self.index_cache.get("indices")
         if cached:
-            return cached
+            return self._decorate_indices(cached, "fresh", started_at)
 
         with self.index_lock:
             cached = self.index_cache.get("indices")
             if cached:
-                return cached
-            return self._fetch_indices_uncached()
+                return self._decorate_indices(cached, "fresh", started_at)
+            rows = self._fetch_indices_uncached()
+            cache_state = "stale" if any(item.get("stale") for item in rows) else "live"
+            return self._decorate_indices(rows, cache_state, started_at)
 
     def _fetch_indices_uncached(self) -> list[dict[str, Any]]:
         results = self._fetch_sina_indices_batch(INDEX_SYMBOLS)
@@ -218,31 +346,35 @@ class MarketDataService:
         live_indices = sum(1 for item in indices if is_finite(item.get("price")))
         return {
             "ok": has_required_rates(fx["rates"]) and live_indices == len(indices),
+            "version": APP_VERSION,
             "fxSource": fx.get("source"),
+            "fxCacheState": fx.get("cacheState"),
             "indicesLive": live_indices,
             "indicesTotal": len(indices),
             "autoRefreshSeconds": AUTO_REFRESH_SECONDS,
+            "sourcesTracked": len(self.source_stats),
         }
 
     def fetch_trends(self, mode: str = "intraday", symbols: list[str] | None = None) -> list[dict[str, Any]]:
+        started_at = time.perf_counter()
         trend_mode = normalize_trend_mode(mode)
         wanted_symbols = normalize_symbol_filter(symbols)
         cache_key = f"trends:{trend_mode}"
         cached = self.trend_cache.get(cache_key)
         if cached:
-            return filter_trends(cached, wanted_symbols)
+            return filter_trends(self._decorate_trends(cached, "fresh", cache_key, started_at), wanted_symbols)
 
         with self.trend_lock:
             cached = self.trend_cache.get(cache_key)
             if cached:
-                return filter_trends(cached, wanted_symbols)
+                return filter_trends(self._decorate_trends(cached, "fresh", cache_key, started_at), wanted_symbols)
             indices = {item["symbol"]: item for item in self.fetch_indices()}
             data = self._fetch_trends_uncached(indices, trend_mode)
             if data:
                 self.trend_cache.set(cache_key, data)
-                return filter_trends(data, wanted_symbols)
+                return filter_trends(self._decorate_trends(data, "live", cache_key, started_at), wanted_symbols)
             stale = self.trend_cache.stale(cache_key)
-            return filter_trends(stale or [], wanted_symbols)
+            return filter_trends(self._decorate_trends(stale or [], "stale", cache_key, started_at), wanted_symbols)
 
     def _fetch_trends_uncached(self, current_rows: dict[str, dict[str, Any]], mode: str) -> list[dict[str, Any]]:
         trends: list[dict[str, Any]] = []
@@ -578,13 +710,18 @@ class MarketDataService:
             headers=headers,
         )
         last_error: Exception | None = None
+        source_name = urlparse(url).netloc or url
+        started_at = time.perf_counter()
         for attempt in range(attempts):
             try:
                 with urlopen(request, timeout=timeout, context=self.ssl_context) as response:
-                    return response.read().decode(encoding, errors="replace")
+                    text = response.read().decode(encoding, errors="replace")
+                    self._record_source(source_name, True, self._elapsed_ms(started_at))
+                    return text
             except Exception as exc:  # noqa: BLE001
                 last_error = exc
                 time.sleep(0.35 * (attempt + 1))
+        self._record_source(source_name, False, self._elapsed_ms(started_at), str(last_error or "request failed"))
         raise last_error or RuntimeError("request failed")
 
 
@@ -615,6 +752,11 @@ def api_health(_: RequestContext) -> dict[str, Any]:
     return service.health()
 
 
+@app.get("/api/diagnostics")
+def api_diagnostics(_: RequestContext) -> dict[str, Any]:
+    return service.diagnostics()
+
+
 def normalize_currency(value: str) -> str:
     code = (value or "USD").upper()
     return code if code in REQUIRED_CURRENCIES else "USD"
@@ -641,6 +783,36 @@ def filter_trends(trends: list[dict[str, Any]], wanted_symbols: set[str]) -> lis
     if not wanted_symbols:
         return trends
     return [item for item in trends if str(item.get("symbol", "")).upper() in wanted_symbols]
+
+
+def to_beijing_iso(value: Any) -> str | None:
+    if not value:
+        return None
+    raw = str(value)
+    try:
+        if raw.endswith("Z"):
+            raw = raw[:-1] + "+00:00"
+        if len(raw) == 10:
+            raw = f"{raw}T00:00:00+00:00"
+        parsed = datetime.fromisoformat(raw)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone(timedelta(hours=8))).isoformat()
+    except ValueError:
+        return None
+
+
+def quality_for_index(row: dict[str, Any], cache_state: str) -> str:
+    if row.get("unavailable"):
+        return "unavailable"
+    if row.get("stale") or cache_state == "stale":
+        return "cache"
+    source = str(row.get("source") or "")
+    if "Sina" in source:
+        return "real"
+    if "Yahoo" in source or "Stooq" in source:
+        return "delayed"
+    return "real"
 
 
 def rebase_fx(snapshot: dict[str, Any], target_base: str) -> dict[str, Any]:
@@ -1188,7 +1360,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
-            if content_type.startswith(("text/html", "application/javascript", "application/json")):
+            if content_type.startswith(("text/html", "application/javascript", "text/javascript", "application/json")):
                 self.send_header("Cache-Control", "no-store, max-age=0")
             else:
                 self.send_header("Cache-Control", "public, max-age=3600")

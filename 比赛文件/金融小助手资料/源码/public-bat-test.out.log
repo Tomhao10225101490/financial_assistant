@@ -1,0 +1,19 @@
+
+============================================================
+ Financial Assistant - Public Access
+============================================================
+
+This window will create a free temporary Cloudflare link.
+Keep this window open. If you close it, the public link stops.
+
+Checking local service: http://127.0.0.1:18765
+Local service is not running. Starting Python server...
+
+Creating public URL...
+
+Look for a line like:
+  https://xxxx.trycloudflare.com
+
+Send that URL to other people.
+Press Ctrl+C in this window to stop public access.
+

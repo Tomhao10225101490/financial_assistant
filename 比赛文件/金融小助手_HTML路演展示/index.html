@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>金融小助手 | Global Market Intelligence</title>
+  <meta name="description" content="金融小助手全球市场智能控制台" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <canvas id="sceneCanvas" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <main class="deck" id="deck">
+    <section class="slide slide-hero is-active" data-kicker="01 / Vision">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">GLOBAL MARKET INTELLIGENCE CONSOLE</p>
+          <h1>金融小助手</h1>
+          <p class="lead">一个面向金融学习与市场观察场景的轻量级全球市场数据控制台。</p>
+          <div class="hero-badges">
+            <span>Near Real-time FX</span>
+            <span>Global Indices</span>
+            <span>3D Market Globe</span>
+            <span>Zero-cost Sharing</span>
+          </div>
+        </div>
+        <div class="hero-orbit" aria-label="全球市场动态示意">
+          <div class="orbital-shell">
+            <div class="core-globe">
+              <span class="continent c1"></span>
+              <span class="continent c2"></span>
+              <span class="continent c3"></span>
+              <span class="hotspot h1"></span>
+              <span class="hotspot h2"></span>
+              <span class="hotspot h3"></span>
+            </div>
+            <span class="orbit o1"></span>
+            <span class="orbit o2"></span>
+            <span class="orbit o3"></span>
+          </div>
+        </div>
+      </div>
+      <div class="ticker">
+        <div class="ticker-track">
+          <span>USD/CNY 质量标签</span><span>S&P 500 趋势图</span><span>上证指数 同源涨跌幅</span><span>北京时间对照</span><span>Cloudflare Quick Tunnel</span>
+          <span>USD/CNY 质量标签</span><span>S&P 500 趋势图</span><span>上证指数 同源涨跌幅</span><span>北京时间对照</span><span>Cloudflare Quick Tunnel</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide team-focus" data-kicker="02 / Team">
+      <div class="team-slide">
+        <p class="eyebrow">TEAM STRUCTURE</p>
+        <h2>团队分工围绕产品战略、工程落地和可信表达展开。</h2>
+        <div class="team-grid photo-team">
+          <article>
+            <img src="./member_pic/史健申.jpg" alt="史健申照片" />
+            <span>组长 / Product & Validation</span>
+            <h3>史健申</h3>
+            <p>负责项目统筹、需求抽象、数据可信度测试、公开访问验证、产品叙事和呈现路径设计。</p>
+          </article>
+          <article>
+            <img src="./member_pic/曹桂涛.png" alt="曹桂涛老师照片" />
+            <span>指导老师 / Architecture Advisor</span>
+            <h3>曹桂涛</h3>
+            <p>负责技术路线指导、架构与创新性把关、项目规范指导，帮助系统形成可审查的工程表达。</p>
+          </article>
+          <article>
+            <img src="./member_pic/钟浩.jpg" alt="钟浩照片" />
+            <span>组员 / Engineering & Visualization</span>
+            <h3>钟浩</h3>
+            <p>负责产品设计、Python 数据网关、数据源适配、前端核心交互、3D 可视化和最终工程交付。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="03 / Market Gap">
+      <div class="section-title">
+        <p class="eyebrow">WHY NOW</p>
+        <h2>金融信息不缺，缺的是可信入口。</h2>
+      </div>
+      <div class="problem-grid">
+        <article>
+          <strong>Fragmented Data</strong>
+          <h3>数据割裂</h3>
+          <p>汇率、指数、趋势图和市场时间分散在不同站点，用户需要频繁切换上下文。</p>
+        </article>
+        <article>
+          <strong>Trust Gap</strong>
+          <h3>可信度不透明</h3>
+          <p>免费公开源可能延迟或失效，但传统页面很少把质量状态直接告诉用户。</p>
+        </article>
+        <article>
+          <strong>Time-zone Friction</strong>
+          <h3>跨时区认知成本</h3>
+          <p>全球市场不是同一时间运行，市场本地时间和北京时间需要被同时表达。</p>
+        </article>
+        <article>
+          <strong>Delivery Barrier</strong>
+          <h3>共享触达门槛</h3>
+          <p>很多产品只能停留在本机环境，无法让外部用户通过链接即时体验完整能力。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="04 / Product">
+      <div class="split">
+        <div>
+          <p class="eyebrow">PRODUCT POSITIONING</p>
+          <h2>一屏式全球市场操作层</h2>
+          <p class="lead small">把汇率、指数、图表、时钟、来源、质量标签和公开访问整合为一个低依赖、高可用的金融观察工作台。</p>
+        </div>
+        <div class="terminal-card">
+          <div class="terminal-bar"><i></i><i></i><i></i><span>Market Console</span></div>
+          <div class="metric-row"><span>FX Rates</span><b>12 currencies</b></div>
+          <div class="metric-row"><span>World Indices</span><b>multi-market</b></div>
+          <div class="metric-row"><span>Trend Mode</span><b>Intraday / Daily / Monthly</b></div>
+          <div class="metric-row"><span>Quality State</span><b>Realtime · Delayed · Cached</b></div>
+        </div>
+      </div>
+      <div class="capability-strip">
+        <span>Search-first</span>
+        <span>Theme-aware</span>
+        <span>Red/Green Convention</span>
+        <span>Official Source Links</span>
+        <span>20s Refresh</span>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="05 / Product Proof">
+      <div class="section-title">
+        <p class="eyebrow">RUNNING PRODUCT</p>
+        <h2>真实运行界面，不是概念稿。</h2>
+      </div>
+      <div class="hero-proof-layout">
+        <figure class="proof-hero-shot">
+          <img src="./assets/screenshots/product-hero.png" alt="金融小助手首页运行截图" />
+          <figcaption>
+            <b>Global Control Surface</b>
+            <span>市场时钟、搜索、偏好切换、状态反馈在首屏聚合。</span>
+          </figcaption>
+        </figure>
+        <div class="proof-insights">
+          <article><span>01</span><b>市场时钟 + 3D 地球</b><p>首屏把地理位置、时区和读秒联动放在同一视觉焦点里。</p></article>
+          <article><span>02</span><b>搜索 + 偏好控制</b><p>用户可以快速定位货币或指数，并切换主题和涨跌颜色习惯。</p></article>
+          <article><span>03</span><b>数据可信反馈</b><p>运行可信度、来源、缓存状态和刷新节奏都在主界面直接呈现。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="06 / Product Details">
+      <div class="section-title">
+        <p class="eyebrow">RUNNING DETAILS</p>
+        <h2>关键功能用大图呈现，细节完整可读。</h2>
+      </div>
+      <div class="workflow-board">
+        <figure class="workflow-shot">
+          <img src="./assets/screenshots/product-mid.png" alt="金融小助手汇率模块运行截图" />
+          <figcaption>
+            <b>FX & Converter</b>
+            <span>基础货币、质量标签、官方来源和换汇计算共用一条路径。</span>
+          </figcaption>
+        </figure>
+        <figure class="workflow-shot">
+          <img src="./assets/screenshots/product-lower.png" alt="金融小助手指数图表运行截图" />
+          <figcaption>
+            <b>Index Charts</b>
+            <span>指数列表、三模式趋势图和质量标签形成同一条分析路径。</span>
+          </figcaption>
+        </figure>
+        <div class="workflow-analysis">
+          <b>What This Proves</b>
+          <p>页面不是单张静态图，而是由汇率、换算、指数、趋势、来源和诊断状态组成的连续工作流。</p>
+          <span>API Health</span>
+          <span>Cache State</span>
+          <span>Source Status</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="07 / System">
+      <div class="section-title">
+        <p class="eyebrow">TECHNICAL ARCHITECTURE</p>
+        <h2>以本地边缘服务为核心的轻量数据中台。</h2>
+      </div>
+      <div class="architecture-showcase">
+        <figure class="diagram-card">
+          <img src="../金融小助手_图文素材/architecture.svg" alt="金融小助手系统架构图" />
+          <figcaption>浏览器、Python 本地服务、多源适配、缓存和诊断接口形成闭环。</figcaption>
+        </figure>
+        <div class="architecture-insights">
+          <article>
+            <span>01</span>
+            <h3>Native Frontend</h3>
+            <p>原生 HTML/CSS/JS 与 Canvas/SVG/地球可视化负责呈现和交互。</p>
+          </article>
+          <article class="primary">
+            <span>02</span>
+            <h3>Python Edge Gateway</h3>
+            <p>本地 HTTP 服务统一承接 API、缓存、诊断和静态资源分发。</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Multi-source Adapter</h3>
+            <p>公开市场源被归一成稳定领域模型，并保留质量状态。</p>
+          </article>
+        </div>
+      </div>
+      <div class="keyword-cloud">
+        <b>Data Fusion</b><b>Resilience</b><b>Observability</b><b>Progressive Enhancement</b><b>Zero Build</b><b>Cache QoS</b>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="08 / Data Layer">
+      <div class="section-title">
+        <p class="eyebrow">DATA INTELLIGENCE LAYER</p>
+        <h2>从公开数据源到可信市场对象。</h2>
+      </div>
+      <div class="data-layer-layout">
+        <figure class="diagram-card dark">
+          <img src="../金融小助手_图文素材/data-flow.svg" alt="金融小助手数据流与缓存图" />
+          <figcaption>外部公开源经过网关、缓存和质量标注后进入界面。</figcaption>
+        </figure>
+        <div class="data-blueprint">
+          <div class="source-stack">
+            <span>Frankfurter</span>
+            <span>Sina Finance</span>
+            <span>Stooq</span>
+            <span>Yahoo</span>
+            <span>Natural Earth</span>
+          </div>
+          <div class="transform-core">
+            <i></i>
+            <h3>Normalize · Validate · Annotate</h3>
+            <p>字段归一、时区对照、同源涨跌幅、质量标签、失败原因沉淀。</p>
+          </div>
+          <div class="domain-stack">
+            <span>FX Rate</span>
+            <span>Index Quote</span>
+            <span>Trend Series</span>
+            <span>Market Clock</span>
+            <span>Source Link</span>
+          </div>
+        </div>
+      </div>
+      <div class="analysis-strip">
+        <article><b>Latency-aware</b><span>承认免费源延迟，用质量状态表达边界。</span></article>
+        <article><b>Source-consistent</b><span>涨跌和涨跌幅坚持同源字段。</span></article>
+        <article><b>Fallback-safe</b><span>失败时保留最近可信数据，不伪造实时性。</span></article>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="09 / Data Trust">
+      <div class="split reverse">
+        <div class="radar-panel">
+          <div class="radar">
+            <span></span><span></span><span></span><i class="pulse p1"></i><i class="pulse p2"></i><i class="pulse p3"></i>
+          </div>
+        </div>
+        <div>
+          <p class="eyebrow">DATA TRUST LAYER</p>
+          <h2>不夸大实时性，用质量标签建立可信边界。</h2>
+          <ul class="feature-list">
+            <li><b>同源涨跌幅</b><span>点位、涨跌和涨跌幅优先来自同一数据源字段。</span></li>
+            <li><b>Stale-while-revalidate</b><span>短缓存优先保障体验，后台刷新降低失败冲击。</span></li>
+            <li><b>Quality of Data</b><span>实时、延迟、缓存、兜底和不可用状态直接呈现。</span></li>
+            <li><b>Diagnostics</b><span>用诊断视图解释数据源状态、缓存年龄和失败原因。</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="10 / Experience">
+      <div class="section-title">
+        <p class="eyebrow">IMMERSIVE UX</p>
+        <h2>金融看板不是堆数字，而是降低理解成本。</h2>
+      </div>
+      <div class="experience-grid">
+        <div class="experience-main">
+          <div class="mini-globe">
+            <span class="city beijing">北京</span>
+            <span class="city ny">纽约</span>
+            <span class="city london">伦敦</span>
+          </div>
+        </div>
+        <div class="ux-card">
+          <h3>3D Market Globe</h3>
+          <p>市场城市光点、拖拽旋转、点击选中、时钟联动，形成空间化市场认知。</p>
+        </div>
+        <div class="ux-card">
+          <h3>Adaptive Charts</h3>
+          <p>分时、日 K、月 K 三模式，支持从总览到详情的渐进式探索。</p>
+        </div>
+        <div class="ux-card">
+          <h3>Culture-aware Colors</h3>
+          <p>红涨绿跌与绿涨红跌可切换，尊重不同市场用户习惯。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="11 / Evidence">
+      <div class="split">
+        <div>
+          <p class="eyebrow">FULL STACK SNAPSHOT</p>
+          <h2>一个页面覆盖数据获取、计算、图表和来源核验。</h2>
+          <p class="lead small">产品长页截图体现了完整信息架构：顶部市场时钟，中段汇率和换汇，后段指数与趋势图，底层以诊断能力支撑可信表达。</p>
+        </div>
+        <figure class="long-shot">
+          <img src="./assets/screenshots/product-full.png" alt="金融小助手完整页面运行截图" />
+        </figure>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="12 / Innovation">
+      <div class="section-title">
+        <p class="eyebrow">INNOVATION VALUE</p>
+        <h2>创新点不是堆技术名词，而是在真实约束中形成完整闭环。</h2>
+      </div>
+      <div class="value-matrix">
+        <div><span>01</span><h3>低依赖交付</h3><p>无需 node/npm、无需数据库、无需付费 API，降低环境失败概率。</p></div>
+        <div><span>02</span><h3>可信可观测</h3><p>把数据源状态、缓存、延迟和失败原因透明化。</p></div>
+        <div><span>03</span><h3>沉浸式表达</h3><p>3D 地球与趋势图让全球市场从表格变成可探索空间。</p></div>
+        <div><span>04</span><h3>零成本分发</h3><p>通过临时公网隧道让外部用户直接访问完整产品。</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="13 / Growth">
+      <div class="split">
+        <div>
+          <p class="eyebrow">ENTREPRENEURIAL POTENTIAL</p>
+          <h2>从市场观察入口，延展为金融学习与研究平台。</h2>
+          <p class="lead small">目标用户不是专业交易员，而是金融学习者、课程课堂、校园社团、小型研究小组和需要轻量数据工作台的团队。</p>
+        </div>
+        <div class="roadmap">
+          <div><b>Phase 1</b><span>轻量市场观察工具</span></div>
+          <div><b>Phase 2</b><span>自选市场 + 学习卡片</span></div>
+          <div><b>Phase 3</b><span>合规数据源 + 正式云部署</span></div>
+          <div><b>Phase 4</b><span>教育版市场实验室</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="14 / Journey">
+      <div class="section-title">
+        <p class="eyebrow">PRODUCT JOURNEY</p>
+        <h2>核心路径只做四件事：好看、能用、可信、能分享。</h2>
+      </div>
+      <div class="journey-steps">
+        <article><span>1</span><h3>3D 地球开场</h3><p>拖拽旋转，点击市场光点，展示实时读秒和时区联动。</p></article>
+        <article><span>2</span><h3>汇率与官方来源</h3><p>切换基础货币，完成高精度换算，点击中国银行或 ECB 页面核验。</p></article>
+        <article><span>3</span><h3>指数与三模式图表</h3><p>展示全球指数，切换分时 / 日 K / 月 K，并说明质量标签。</p></article>
+        <article><span>4</span><h3>公网即时体验</h3><p>生成 trycloudflare.com 链接，让外部用户直接打开完整产品。</p></article>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="15 / Moat">
+      <div class="section-title">
+        <p class="eyebrow">TECHNICAL MOAT</p>
+        <h2>我们做的不是行情页面，而是一套可解释的数据体验链路。</h2>
+      </div>
+      <div class="moat-grid">
+        <article>
+          <span>Data Fusion</span>
+          <h3>多源市场数据融合</h3>
+          <p>通过适配器屏蔽数据源差异，将汇率、指数、趋势、时区和来源链接归一为稳定领域模型。</p>
+        </article>
+        <article>
+          <span>Cache QoS</span>
+          <h3>韧性缓存策略</h3>
+          <p>短缓存、长缓存、请求合并和 stale-while-revalidate 共同降低刷新压力和失败冲击。</p>
+        </article>
+        <article>
+          <span>Observability</span>
+          <h3>系统可观测性</h3>
+          <p>诊断视图暴露缓存年龄、数据源状态、失败原因和接口耗时，让系统不止于视觉。</p>
+        </article>
+        <article>
+          <span>Immersive UX</span>
+          <h3>沉浸式金融表达</h3>
+          <p>3D 地球、三模式图表、主题系统和涨跌习惯切换，构成可展示、可理解、可传播的产品体验。</p>
+        </article>
+      </div>
+      <div class="pipeline">
+        <span>Acquire</span><i></i><span>Normalize</span><i></i><span>Validate</span><i></i><span>Visualize</span><i></i><span>Share</span>
+      </div>
+    </section>
+
+    <section class="slide" data-kicker="16 / Closing">
+      <div class="final-stage">
+        <p class="eyebrow">FINAL STATEMENT</p>
+        <h2>金融小助手把全球金融数据从分散网站，升级为可运行、可解释、可公开的智能控制台。</h2>
+        <div class="final-points">
+          <span>Market Intelligence</span>
+          <span>Trusted Data Layer</span>
+          <span>Immersive Visualization</span>
+          <span>Zero-cost Public Access</span>
+        </div>
+        <p class="closing">用最低部署成本，呈现足够专业的金融数据体验。</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="slide-count" id="slideCount">01 / 16</div>
+  <div class="hint">← → / Space 切换 · F 全屏</div>
+
+  <script src="./showcase.js"></script>
+</body>
+</html>

@@ -206,6 +206,7 @@ const state = {
   loading: false,
   trendsLoading: false,
   trendLoadingByMode: {},
+  diagnostics: null,
   lastUpdatedAt: null,
   selectedClockIndex: 0
 };
@@ -231,6 +232,8 @@ const elements = {
   baseCurrencyHelp: document.querySelector("#baseCurrencyHelp"),
   marketBreadth: document.querySelector("#marketBreadth"),
   sourceLabel: document.querySelector("#sourceLabel"),
+  diagnosticsLabel: document.querySelector("#diagnosticsLabel"),
+  diagnosticsHelp: document.querySelector("#diagnosticsHelp"),
   fxStatus: document.querySelector("#fxStatus"),
   indexStatus: document.querySelector("#indexStatus"),
   fxGrid: document.querySelector("#fxGrid"),
@@ -309,6 +312,35 @@ function formatPercent(value) {
   if (!Number.isFinite(value)) return "--";
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toFixed(2)}%`;
+}
+
+function qualityLabel(quality, cacheState) {
+  const key = quality || cacheState || "real";
+  return {
+    real: "真实",
+    delayed: "延迟",
+    cache: "缓存",
+    stale: "缓存",
+    fallback: "兜底",
+    unavailable: "不可用",
+    live: "实时"
+  }[key] || key;
+}
+
+function qualityLabelText(quality) {
+  const label = qualityLabel(quality, quality);
+  return label === "真实" ? "真实" : `${label}·`;
+}
+
+function qualityTone(quality, cacheState) {
+  const key = quality || cacheState || "real";
+  if (key === "real" || key === "live") return "ok";
+  if (key === "delayed" || key === "cache" || key === "stale" || key === "fallback") return "warn";
+  return "muted";
+}
+
+function latencyLabel(value) {
+  return Number.isFinite(value) ? `${Math.max(0, Math.round(value))}ms` : "--";
 }
 
 function trendModeMeta(mode = state.trendMode) {
@@ -517,7 +549,14 @@ async function fetchFxRates(base = "USD") {
         source: data.source || "本地 Python API",
         sourceUrl: data.sourceUrl || sourceUrlForFx(data.source),
         rates: normalizeRates(data.rates),
-        stale: Boolean(data.stale)
+        stale: Boolean(data.stale),
+        cacheState: data.cacheState || (data.stale ? "stale" : "live"),
+        quality: data.quality || (data.stale ? "cache" : "real"),
+        latencyMs: finiteNumber(data.latencyMs),
+        cacheAgeSeconds: finiteNumber(data.cacheAgeSeconds),
+        officialSourceUrl: data.officialSourceUrl || data.sourceUrl || sourceUrlForFx(data.source),
+        beijingUpdatedAt: data.beijingUpdatedAt || null,
+        errors: Array.isArray(data.errors) ? data.errors : []
       };
       if (!hasRequiredRates(parsed.rates)) {
         throw new Error("Local FX API is missing required currencies");
@@ -724,6 +763,17 @@ async function fetchTrends(mode = state.trendMode) {
   return cached && typeof cached === "object" && cached[trendMode] ? cached[trendMode] : {};
 }
 
+async function fetchDiagnostics() {
+  if (!hasBackendApi()) return null;
+  try {
+    const data = await fetchJson("/api/diagnostics", { timeout: 6000 });
+    return data && data.ok ? data : null;
+  } catch (error) {
+    console.warn("Diagnostics API failed.", error);
+    return null;
+  }
+}
+
 function normalizeTrends(rows, fallbackMode = state.trendMode) {
   return Object.fromEntries(rows.map((row) => [
     row.symbol,
@@ -738,6 +788,11 @@ function normalizeTrends(rows, fallbackMode = state.trendMode) {
       quality: row.quality || (row.derived ? "fallback" : "real"),
       fallbackReason: row.fallbackReason || "",
       derived: Boolean(row.derived),
+      cacheState: row.cacheState || "live",
+      latencyMs: finiteNumber(row.latencyMs),
+      cacheAgeSeconds: finiteNumber(row.cacheAgeSeconds),
+      marketTimeZone: row.marketTimeZone || row.timeZone || "",
+      beijingUpdatedAt: row.beijingUpdatedAt || null,
       points: Array.isArray(row.points)
         ? row.points
             .map((point) => ({
@@ -768,9 +823,15 @@ function normalizeIndexRow(row) {
     timeZone: row.timeZone || meta.timeZone || "UTC",
     timeZoneLabel: row.timeZoneLabel || meta.timeZoneLabel || "数据源时间",
     detailUrl: row.detailUrl || meta.detailUrl || "",
+    sourceDetailUrl: row.sourceDetailUrl || row.detailUrl || meta.detailUrl || "",
     source: row.source || "本地 Python API",
     unavailable: Boolean(row.unavailable),
-    stale: Boolean(row.stale)
+    stale: Boolean(row.stale),
+    quality: row.quality || (row.unavailable ? "unavailable" : row.stale ? "cache" : "real"),
+    cacheState: row.cacheState || (row.stale ? "stale" : "live"),
+    latencyMs: finiteNumber(row.latencyMs),
+    cacheAgeSeconds: finiteNumber(row.cacheAgeSeconds),
+    beijingUpdatedAt: row.beijingUpdatedAt || null
   };
 }
 
@@ -1916,6 +1977,9 @@ function renderFx() {
         const dataSource = fx.source
           ? `<span class="fx-data-source">数据计算 · ${escapeHtml(fx.source)}</span>`
           : "";
+        const quality = qualityLabel(fx.quality, fx.cacheState);
+        const qualityClass = qualityTone(fx.quality, fx.cacheState);
+        const latency = Number.isFinite(fx.latencyMs) ? ` · ${latencyLabel(fx.latencyMs)}` : "";
         const body = `
             <header>
               <span class="fx-code">${currency.code}</span>
@@ -1923,6 +1987,7 @@ function renderFx() {
             </header>
             <div class="fx-rate">${formatFxRate(rate)}</div>
             <small>1 ${fx.base} = ${formatFxRate(rate)} ${currency.code}</small>
+            <span class="quality-badge ${qualityClass}">${quality}${latency}</span>
         `;
         return official?.url
           ? `<a class="fx-card fx-card-link" href="${escapeHtml(official.url)}" target="_blank" rel="noopener noreferrer" aria-label="打开 ${fx.base}/${currency.code} 官方汇率页面">${body}<span class="fx-source-hint">${escapeHtml(official.label)}</span>${dataSource}</a>`
@@ -1963,6 +2028,9 @@ function renderIndices() {
         const detailLink = item.detailUrl
           ? `<a class="index-link" href="${item.detailUrl}" target="_blank" rel="noopener noreferrer">${nameMarkup}</a>`
           : `<span class="index-name">${nameMarkup}</span>`;
+        const quality = qualityLabel(item.quality, item.cacheState);
+        const qualityClass = qualityTone(item.quality, item.cacheState);
+        const sourceUrl = item.sourceDetailUrl || item.detailUrl;
         return `
           <tr class="index-row ${state.detailSymbol === item.symbol ? "active" : ""}" data-index-symbol="${escapeHtml(item.symbol)}" tabindex="0" aria-label="打开 ${escapeHtml(zhName)} 图表详情">
             <td>
@@ -1974,7 +2042,10 @@ function renderIndices() {
             <td class="${tone}">${item.unavailable ? "--" : formatPercent(item.changePct)}</td>
             <td class="trend-cell">${renderSparkline(trend, tone, state.trendMode)}</td>
             <td>${item.unavailable ? "--" : formatDualTimeCell(item.updatedAt, item.timeZone, item.timeZoneLabel)}</td>
-            <td>${item.detailUrl ? `<a class="source-link" href="${item.detailUrl}" target="_blank" rel="noopener noreferrer">官方详情</a>` : "--"}</td>
+            <td>
+              <span class="quality-badge ${qualityClass}">${quality}</span>
+              ${sourceUrl ? `<a class="source-link" href="${sourceUrl}" target="_blank" rel="noopener noreferrer">官方详情</a>` : "--"}
+            </td>
           </tr>
         `;
       }).join("")
@@ -2024,7 +2095,7 @@ function renderIndexDetail() {
   const tone = index.change > 0 ? "up" : index.change < 0 ? "down" : "muted";
   const qualityLabel = trend && (trend.derived || trend.quality === "fallback")
     ? "报价区间兜底"
-    : "真实K线";
+    : `${qualityLabelText(trend ? trend.quality : index.quality)}K线`;
   const fallbackText = trend && trend.fallbackReason ? ` · ${trend.fallbackReason}` : "";
   const timeLabel = trend && trend.updatedAt
     ? formatDualTime(trend.updatedAt, trend.timeZone || index.timeZone, trend.timeZoneLabel || index.timeZoneLabel)
@@ -2090,6 +2161,19 @@ function renderSummary() {
   elements.baseCurrencyHelp.textContent = `汇率以 1 ${fx.base} 为基准`;
   elements.marketBreadth.textContent = state.indices.length ? `${up} 涨 / ${down} 跌` : "--";
   elements.sourceLabel.textContent = Array.from(sources).slice(0, 3).join(" · ") || "--";
+  if (elements.diagnosticsLabel && elements.diagnosticsHelp) {
+    const diagnostics = state.diagnostics;
+    const sourceCount = diagnostics && diagnostics.sources ? Object.keys(diagnostics.sources).length : 0;
+    const cacheCount = diagnostics && diagnostics.cache
+      ? Object.values(diagnostics.cache).reduce((total, group) => total + Object.keys(group || {}).length, 0)
+      : 0;
+    elements.diagnosticsLabel.textContent = diagnostics
+      ? `${sourceCount} 源监控 · ${cacheCount} 组缓存`
+      : "本地 API · 待检测";
+    elements.diagnosticsHelp.textContent = diagnostics
+      ? `版本 ${diagnostics.version || "--"} · ${diagnostics.publicAccess?.cachePolicy || "no-store"}`
+      : "刷新后显示数据源、缓存和公网资源状态";
+  }
   elements.updatedAt.textContent = state.lastUpdatedAt
     ? formatDualTime(state.lastUpdatedAt, LOCAL_TIME_ZONE, localTimeZoneLabel())
     : "--";
@@ -2117,9 +2201,14 @@ async function refreshData() {
   renderAll();
 
   try {
-    const [fx, indices] = await Promise.all([fetchFxRates(state.baseCurrency), fetchIndices()]);
+    const [fx, indices, diagnostics] = await Promise.all([
+      fetchFxRates(state.baseCurrency),
+      fetchIndices(),
+      fetchDiagnostics()
+    ]);
     state.fx = fx;
     state.indices = indices;
+    state.diagnostics = diagnostics;
     state.lastUpdatedAt = new Date().toISOString();
 
     const hasFallback = fx.stale || indices.some((item) => item.stale || item.unavailable);

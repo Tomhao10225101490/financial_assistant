@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700">
+  <defs><radialGradient id="o" cx=".45" cy=".35"><stop stop-color="#55f1e6"/><stop offset=".45" stop-color="#0d84bd"/><stop offset="1" stop-color="#062747"/></radialGradient><filter id="g"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect width="1200" height="700" rx="30" fill="#071714"/>
+  <text x="60" y="85" fill="#f4fff9" font-size="44" font-family="Microsoft YaHei, Arial" font-weight="800">3D 交互地球时钟</text>
+  <circle cx="405" cy="365" r="210" fill="url(#o)" stroke="#77f4e5" stroke-width="3" opacity=".95"/>
+  <path d="M258 285 C330 210 435 210 520 285 C455 298 400 320 362 374 C330 420 286 392 258 285Z" fill="#42d89f" opacity=".55"/>
+  <path d="M445 430 C505 390 574 422 585 485 C520 542 460 506 445 430Z" fill="#42d89f" opacity=".45"/>
+  <path d="M210 350 C330 258 480 260 600 350 M220 430 C360 500 495 505 590 370 M405 155 C460 260 463 470 405 575 M405 155 C348 265 348 468 405 575" fill="none" stroke="#b7fff6" stroke-width="2" opacity=".35"/>
+  <circle cx="292" cy="252" r="13" fill="#67fff0" filter="url(#g)"/><text x="245" y="232" fill="#dffff8" font-size="22" font-family="Microsoft YaHei">伦敦</text>
+  <circle cx="518" cy="268" r="13" fill="#ffd166" filter="url(#g)"/><text x="538" y="255" fill="#dffff8" font-size="22" font-family="Microsoft YaHei">北京</text>
+  <circle cx="545" cy="438" r="13" fill="#67fff0" filter="url(#g)"/><text x="562" y="445" fill="#dffff8" font-size="22" font-family="Microsoft YaHei">东京</text>
+  <g font-family="Microsoft YaHei, Arial" font-size="26" font-weight="700">
+    <rect x="720" y="185" width="380" height="78" rx="18" fill="#122c25" stroke="#47d9c0"/><text x="750" y="235" fill="#eafff8">拖拽旋转：中心固定</text>
+    <rect x="720" y="300" width="380" height="78" rx="18" fill="#122c25" stroke="#47d9c0"/><text x="750" y="350" fill="#eafff8">点击光点：显示时间</text>
+    <rect x="720" y="415" width="380" height="78" rx="18" fill="#122c25" stroke="#47d9c0"/><text x="750" y="465" fill="#eafff8">点击空白：取消选中</text>
+  </g>
+</svg>

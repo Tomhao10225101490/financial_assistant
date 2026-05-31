@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680">
+  <rect width="1200" height="680" rx="30" fill="#f4f7f6"/>
+  <text x="60" y="80" font-size="44" font-family="Microsoft YaHei, Arial" font-weight="800" fill="#10201c">金融小助手系统架构</text>
+  <g font-family="Microsoft YaHei, Arial" font-size="24" font-weight="700">
+    <rect x="70" y="150" width="250" height="120" rx="18" fill="#dff6f1" stroke="#36b6a4"/>
+    <text x="105" y="205" fill="#10201c">用户浏览器</text><text x="105" y="240" fill="#42736b" font-size="18">HTML / CSS / JS</text>
+    <rect x="475" y="150" width="250" height="120" rx="18" fill="#e8f0ff" stroke="#5a8dff"/>
+    <text x="505" y="205" fill="#10201c">Python 本地服务</text><text x="505" y="240" fill="#506a92" font-size="18">统一 API + 静态资源</text>
+    <rect x="880" y="150" width="250" height="120" rx="18" fill="#fff1df" stroke="#ffaf45"/>
+    <text x="922" y="205" fill="#10201c">公开数据源</text><text x="922" y="240" fill="#8a6432" font-size="18">Frankfurter / Sina / Stooq</text>
+    <rect x="475" y="355" width="250" height="120" rx="18" fill="#e9fff5" stroke="#31c48d"/>
+    <text x="520" y="408" fill="#10201c">分层缓存</text><text x="520" y="443" fill="#4b7966" font-size="18">TTL / stale / fallback</text>
+    <rect x="70" y="355" width="250" height="120" rx="18" fill="#f0e8ff" stroke="#9c72ff"/>
+    <text x="105" y="408" fill="#10201c">3D 地球与图表</text><text x="105" y="443" fill="#675090" font-size="18">Three.js / SVG / Canvas</text>
+    <rect x="880" y="355" width="250" height="120" rx="18" fill="#ffecef" stroke="#ed6a83"/>
+    <text x="925" y="408" fill="#10201c">诊断接口</text><text x="925" y="443" fill="#8f4b58" font-size="18">耗时 / 缓存 / 失败原因</text>
+    <path d="M320 210 L475 210" stroke="#1c3933" stroke-width="5" marker-end="url(#a)"/>
+    <path d="M725 210 L880 210" stroke="#1c3933" stroke-width="5" marker-end="url(#a)"/>
+    <path d="M600 270 L600 355" stroke="#1c3933" stroke-width="5" marker-end="url(#a)"/>
+    <path d="M475 420 L320 420" stroke="#1c3933" stroke-width="5" marker-end="url(#a)"/>
+    <path d="M725 420 L880 420" stroke="#1c3933" stroke-width="5" marker-end="url(#a)"/>
+  </g>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L10,3 L0,6 Z" fill="#1c3933"/></marker></defs>
+</svg>

@@ -7,6 +7,7 @@ set "LOCAL_URL=http://127.0.0.1:%PORT%"
 set "PYTHON_EXE=%~dp0.python\python.exe"
 set "SERVER_FILE=%~dp0server.py"
 set "CLOUDFLARED_EXE=%~dp0cloudflared.exe"
+set "GLOBE_FILE=%~dp0world-land-10m.json"
 
 title Financial Assistant Public Link
 echo.
@@ -44,6 +45,13 @@ if not exist "%CLOUDFLARED_EXE%" (
   exit /b 1
 )
 
+if not exist "%GLOBE_FILE%" (
+  echo [ERROR] High precision globe data was not found:
+  echo %GLOBE_FILE%
+  pause
+  exit /b 1
+)
+
 echo Checking local service: %LOCAL_URL%
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { $r = Invoke-WebRequest -UseBasicParsing '%LOCAL_URL%/' -TimeoutSec 2; if ($r.StatusCode -ge 200 -and $r.StatusCode -lt 500) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>nul
 
@@ -54,6 +62,16 @@ if errorlevel 1 (
 ) else (
   echo Local service is already running.
 )
+
+echo Verifying competition assets...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { $h = Invoke-WebRequest -UseBasicParsing '%LOCAL_URL%/api/diagnostics' -TimeoutSec 6; $g = Invoke-WebRequest -UseBasicParsing '%LOCAL_URL%/world-land-10m.json?v=competition' -TimeoutSec 8; if ($h.StatusCode -eq 200 -and $g.StatusCode -eq 200 -and $g.RawContentLength -gt 1000000) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>nul
+if errorlevel 1 (
+  echo [ERROR] Local diagnostics or high precision globe asset check failed.
+  echo Open %LOCAL_URL%/api/diagnostics and %LOCAL_URL%/world-land-10m.json to inspect.
+  pause
+  exit /b 1
+)
+echo Diagnostics and 1:10m globe asset OK.
 
 echo.
 echo Creating public URL...
